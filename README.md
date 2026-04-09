@@ -3,7 +3,7 @@
 A free, open-source Instagram hashtag scoring tool for any niche.
 
 ## What It Is
-A web-based tool that analyzes and scores Instagram hashtags based on three weighted factors: search volume, competition level, and niche relevance. Results are output in three clear tiers so you know exactly which hashtags to prioritize.
+A web-based tool that analyzes and scores social media hashtags based on three weighted factors: search volume, competition level, and niche relevance. Results are output in three clear tiers so you know exactly which hashtags to prioritize.
 
 ## How It Works
 1. Enter your niche (e.g. "swim coach for teens", "vegan food blogger", "real estate agent")
