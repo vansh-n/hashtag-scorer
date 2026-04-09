@@ -1192,55 +1192,58 @@ function pickCategories(niche) {
 function scoreHashtag(tag, accountSize, goal) {
   // Volume score — low volume = easiest to rank in
   let volumeScore;
-  if (tag.volume === 'high') volumeScore = 40;
-  else if (tag.volume === 'medium') volumeScore = 70;
+  if (tag.volume === 'high') volumeScore = 30;
+  else if (tag.volume === 'medium') volumeScore = 65;
   else volumeScore = 90;
 
   // Competition score — inverse (lower competition = higher score)
   let competitionScore;
-  if (tag.competition === 'high') competitionScore = 20;
-  else if (tag.competition === 'medium') competitionScore = 60;
-  else competitionScore = 90;
+  if (tag.competition === 'high') competitionScore = 15;
+  else if (tag.competition === 'medium') competitionScore = 55;
+  else competitionScore = 92;
 
   // Relevance score
   let relevanceScore;
   if (tag.relevance === 'exact') relevanceScore = 100;
-  else if (tag.relevance === 'adjacent') relevanceScore = 65;
-  else relevanceScore = 35;
+  else if (tag.relevance === 'adjacent') relevanceScore = 60;
+  else relevanceScore = 25;
 
-  // Goal-based weights
+  // Goal-based weights — dramatic differences so goal choice actually matters
   let volumeWeight, competitionWeight, relevanceWeight;
   if (goal === 'reach') {
-    volumeWeight = 0.45; competitionWeight = 0.25; relevanceWeight = 0.30;
+    volumeWeight = 0.55; competitionWeight = 0.15; relevanceWeight = 0.30;
   } else if (goal === 'engagement') {
-    volumeWeight = 0.20; competitionWeight = 0.30; relevanceWeight = 0.50;
+    volumeWeight = 0.10; competitionWeight = 0.20; relevanceWeight = 0.70;
   } else { // followers
-    volumeWeight = 0.25; competitionWeight = 0.40; relevanceWeight = 0.35;
+    volumeWeight = 0.15; competitionWeight = 0.60; relevanceWeight = 0.25;
   }
 
-  // Account size modifier
+  // Account size modifier — large so account size actually matters
   let sizeModifier = 0;
   if (accountSize === 'small') {
-    if (tag.volume === 'low') sizeModifier += 8;
-    if (tag.volume === 'high') sizeModifier -= 10;
-    if (tag.competition === 'low') sizeModifier += 8;
-    if (tag.competition === 'high') sizeModifier -= 10;
+    if (tag.volume === 'high') sizeModifier -= 20;
+    if (tag.volume === 'low') sizeModifier += 15;
+    if (tag.competition === 'high') sizeModifier -= 18;
+    if (tag.competition === 'low') sizeModifier += 15;
+  } else if (accountSize === 'medium') {
+    if (tag.volume === 'high') sizeModifier -= 5;
+    if (tag.volume === 'low') sizeModifier += 5;
+    if (tag.competition === 'high') sizeModifier -= 5;
+    if (tag.competition === 'low') sizeModifier += 5;
   } else if (accountSize === 'growing') {
-    if (tag.volume === 'high') sizeModifier += 7;
-    if (tag.volume === 'low') sizeModifier -= 5;
+    if (tag.volume === 'high') sizeModifier += 18;
+    if (tag.volume === 'low') sizeModifier -= 15;
+    if (tag.competition === 'high') sizeModifier += 8;
+    if (tag.competition === 'low') sizeModifier -= 8;
   }
 
-  // Compute the base score WITHOUT the micro tie-breaker, then soft-cap it
-  // before adding micro. This preserves micro variation at the top of the
-  // range so a pile of low/low/exact tags doesn't all flatten to 100.
   const base = (volumeScore * volumeWeight) +
                (competitionScore * competitionWeight) +
                (relevanceScore * relevanceWeight) +
                sizeModifier;
-  const capped = Math.min(88, base);
-  const raw = capped + (tag.micro || 0);
+  const raw = base + (tag.micro || 0);
 
-  return Math.min(100, Math.max(0, Math.round(raw)));
+  return Math.min(100, Math.max(1, Math.round(raw)));
 }
 
 function getReasonText(tag, accountSize, score) {
@@ -1313,7 +1316,7 @@ function generate(niche, size, goal) {
     niche_anchors = niche_anchors.filter(h => !promotedSet.has(h));
   }
 
-  return { noMatch: false, high, broad, niche_anchors };
+  return { noMatch: false, high, broad, niche_anchors, accountSize: size, goal };
 }
 
 // ---------- RENDER ----------
@@ -1348,7 +1351,7 @@ function escapeHTML(s) {
 }
 
 function render(results) {
-  const { high, broad, niche_anchors, noMatch, message } = results;
+  const { high, broad, niche_anchors, noMatch, message, accountSize, goal } = results;
   const container = document.getElementById('results');
 
   // No-match path: render the friendly empty-state and stop. No tags, no
@@ -1371,6 +1374,7 @@ function render(results) {
   const copyText = all.map(h => '#' + h.tag).join(' ');
 
   const html = `
+    <div style="text-align:center; margin-bottom: 24px; opacity: 0.6; font-size: 13px; color: white;">Scored for: ${escapeHTML(accountSize)} account · Goal: ${escapeHTML(goal)}</div>
     ${tierHTML('High Leverage', 'Your best chance at appearing in top posts', 'green', high, 'Tier 1')}
     ${tierHTML('Broad Reach', 'High exposure, harder to stand out', 'yellow', broad, 'Tier 2')}
     ${tierHTML('Niche Anchors', 'Own your corner — small but loyal audience', 'blue', niche_anchors, 'Tier 3')}
