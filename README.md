@@ -30,7 +30,7 @@ Fashion, Streetwear, Luxury, Sustainable Fashion, Travel, Beach, Food, Restauran
 ## How To Use
 Open the tool in any browser — no installation, no login, no cost.
 
-👉 **[Launch the tool](https://vanshnath.github.io/hashtag-scorer)**
+👉 **[Launch the tool](https://vansh-n.github.io/hashtag-scorer/)**
 
 ## Built By
 **Vansh Nath** 
