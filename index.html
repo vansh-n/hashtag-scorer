@@ -94,15 +94,39 @@
     margin-bottom: 10px;
     line-height: 1.5;
   }
-  .no-match-note {
-    background: #fef3c7;
-    border: 1px solid #fcd34d;
-    color: #92400e;
-    border-radius: 12px;
-    padding: 14px 16px;
+  .no-match-card {
+    background: var(--navy-light);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 20px;
+    padding: 56px 28px;
+    text-align: center;
+    color: white;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.35);
+  }
+  .no-match-card .icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+    line-height: 1;
+  }
+  .no-match-card h3 {
+    font-size: 22px;
+    font-weight: 700;
+    margin-bottom: 12px;
+    color: white;
+  }
+  .no-match-card .message {
+    opacity: 0.75;
+    font-size: 15px;
+    line-height: 1.6;
+    margin-bottom: 24px;
+    max-width: 520px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .no-match-card .examples {
+    opacity: 0.55;
     font-size: 13px;
-    line-height: 1.5;
-    margin-bottom: 20px;
+    line-height: 1.6;
   }
   .field input,
   .field select {
@@ -1003,19 +1027,24 @@ const DB = {
 };
 
 // ---------- KEYWORD ROUTING ----------
-// Order matters slightly: more specific categories listed first so they get priority.
+// All triggers must be ≥4 characters. Short triggers (e.g. 'art', 'gym',
+// 'eat', 'pho') are too prone to substring false positives — they have been
+// removed or expanded into longer multi-word phrases. Triggers are matched at
+// word boundaries (see pickCategories) so 'swim' won't match "swimming" only
+// at word starts. Categories are then scored by total trigger length and
+// only the top 2 are kept (see pickCategories) to prevent unrelated bleed-in.
 const KEYWORDS = {
-  swimming: ['swim', 'pool', 'aquatic', 'stroke', 'freestyle', 'backstroke', 'breaststroke', 'butterfly', 'lap', 'triathlon', 'open water'],
-  basketball: ['basketball', 'hoops', 'court', 'ball', 'dunk', 'nba', 'shooting'],
-  running: ['run', 'marathon', 'jog', 'race', 'sprint', '5k', '10k', 'trail'],
-  yoga: ['yoga', 'meditation', 'mindful', 'breathwork', 'zen', 'pilates', 'stretch'],
-  fitness: ['gym', 'workout', 'fitness', 'training', 'exercise', 'weights', 'cardio', 'lift', 'muscle', 'bodybuilding', 'crossfit'],
+  swimming: ['swim', 'swimming', 'pool', 'aquatic', 'stroke', 'freestyle', 'backstroke', 'breaststroke', 'butterfly', 'lap swim', 'triathlon', 'open water'],
+  basketball: ['basketball', 'hoops', 'court', 'ball', 'dunk', 'nba team', 'shooting'],
+  running: ['running', 'runner', 'marathon', 'jogging', 'race', 'sprint', '5k race', '10k race', 'trail running'],
+  yoga: ['yoga', 'meditation', 'mindful', 'breathwork', 'pilates', 'stretch', 'zen practice'],
+  fitness: ['gym life', 'gym workout', 'workout', 'fitness', 'training', 'exercise', 'weights', 'cardio', 'lift', 'muscle', 'bodybuilding', 'crossfit'],
 
-  baking: ['bak', 'pastry', 'cake', 'bread', 'dessert', 'sweet', 'cookie', 'pie', 'sourdough'],
+  baking: ['baker', 'baking', 'baked', 'pastry', 'cake', 'bread', 'dessert', 'sweet', 'cookie', 'pie baking', 'sourdough'],
   coffee: ['coffee', 'espresso', 'latte', 'barista', 'brew', 'roast', 'cafe'],
   restaurant: ['restaurant', 'cafe', 'diner', 'bistro', 'eatery', 'menu', 'dining'],
   nutrition: ['nutrition', 'diet', 'healthy eating', 'macro', 'calorie', 'supplement', 'protein', 'vegan', 'plant based', 'plant-based'],
-  foodblog: ['food', 'foodie', 'recipe', 'cook', 'eat', 'meal', 'dish', 'cuisine', 'chef', 'kitchen', 'taste'],
+  foodblog: ['food', 'foodie', 'recipe', 'cook', 'eating', 'meal', 'dish', 'cuisine', 'chef', 'kitchen', 'taste'],
 
   mentalhealth: ['mental health', 'therapy', 'therapist', 'counseling', 'anxiety', 'depression', 'behavioral', 'psychology', 'healing'],
   lifecoaching: ['coach', 'mindset', 'motivation', 'personal development', 'self improvement', 'success'],
@@ -1023,14 +1052,14 @@ const KEYWORDS = {
   holistic: ['holistic', 'natural', 'herbal', 'alternative', 'integrative', 'naturopath', 'energy healing'],
 
   tutoring: ['tutor', 'academic', 'study', 'school', 'education', 'learning', 'student', 'teacher', 'homework'],
-  youth: ['youth', 'teen', 'kid', 'child', 'young', 'after school', 'mentorship'],
+  youth: ['youth', 'teen', 'kids', 'child', 'young', 'after school', 'mentorship'],
   edtech: ['course', 'online learning', 'elearning', 'edtech', 'digital education'],
 
-  cleanwater: ['water', 'clean water', 'environment', 'sustainability', 'climate', 'ecology', 'ecological', 'eco friendly', 'green'],
+  cleanwater: ['water', 'clean water', 'environment', 'sustainability', 'climate', 'ecology', 'ecological', 'eco friendly'],
   nonprofit: ['nonprofit', 'charity', 'volunteer', 'philanthropy', 'social impact', 'giveback', 'donate'],
   community: ['community', 'local', 'neighborhood', 'grassroots', 'civic'],
 
-  startup: ['startup', 'founder', 'venture', 'pitch', 'mvp', 'launch'],
+  startup: ['startup', 'founder', 'venture', 'pitch', 'launch'],
   smallbusiness: ['small business', 'shop', 'local business', 'side hustle', 'entrepreneur'],
   realestate: ['real estate', 'realtor', 'property', 'home', 'house', 'mortgage', 'listing'],
   finance: ['finance', 'invest', 'stock', 'money', 'wealth', 'budget', 'trading', 'crypto'],
@@ -1040,8 +1069,8 @@ const KEYWORDS = {
   music: ['music', 'song', 'musician', 'recording', 'producer', 'rapper', 'singer', 'beat', 'record label', 'album', 'soundcloud'],
   fashion: ['fashion', 'style', 'outfit', 'clothing', 'wear', 'ootd', 'apparel', 'streetwear'],
 
-  software: ['code', 'software', 'app', 'developer', 'programming', 'web dev', 'javascript', 'python'],
-  ai: ['ai', 'machine learning', 'artificial intelligence', 'data science', 'neural', 'chatgpt', 'llm'],
+  software: ['code', 'software', 'app dev', 'mobile app', 'developer', 'programming', 'web dev', 'javascript', 'python'],
+  ai: ['ai tool', 'ai startup', 'ai model', 'ai engineer', 'machine learning', 'artificial intelligence', 'data science', 'neural', 'chatgpt'],
   cybersecurity: ['cyber', 'security', 'hacking', 'infosec', 'network', 'penetration', 'malware'],
 
   events: ['event', 'planner', 'party', 'corporate event', 'conference', 'gala'],
@@ -1060,34 +1089,34 @@ const KEYWORDS = {
   digitalnomad: ['digital nomad', 'remote work', 'laptop lifestyle', 'nomad', 'work from anywhere', 'van life'],
 
   // BEAUTY
-  beauty: ['makeup', 'cosmetic', 'lipstick', 'foundation', 'mascara', 'eyeshadow', 'blush', 'glam', 'mua', 'contour'],
+  beauty: ['makeup', 'cosmetic', 'lipstick', 'foundation', 'mascara', 'eyeshadow', 'blush', 'glam', 'contour'],
   hair: ['hair', 'hairstyle', 'haircolor', 'blonde', 'brunette', 'curls', 'natural hair', 'braids', 'haircut', 'salon', 'hairdresser', 'locs', 'afro'],
 
   // ART & MARKETING
-  art: ['art', 'paint', 'draw', 'illustration', 'illustrator', 'artist', 'sketch', 'watercolor', 'acrylic', 'oil paint', 'sculpt', 'gallery', 'canvas'],
-  marketing: ['marketing', 'social media', 'brand ', 'influencer', 'seo', 'campaign', 'ads', 'tiktok marketing', 'instagram marketing'],
+  art: ['art studio', 'digital art', 'wall art', 'art print', 'paint', 'draw', 'illustration', 'illustrator', 'artist', 'sketch', 'watercolor', 'acrylic', 'oil paint', 'sculpt', 'gallery', 'canvas'],
+  marketing: ['marketing', 'social media', 'brand ', 'influencer', 'seo strategy', 'campaign', 'paid ads', 'tiktok marketing', 'instagram marketing'],
 
   // EDUCATION — COLLEGE & SCHOOL
-  college: ['college', 'university', 'uni', 'campus', 'dorm', 'freshman', 'sophomore', 'junior', 'senior', 'grad school', 'major', 'degree', 'admissions', 'frat', 'sorority', 'greek life'],
-  highschool: ['high school', 'highschool', 'prom', 'homecoming', 'graduation', 'class of', 'valedictorian', 'gpa', 'ap class', 'ib diploma'],
+  college: ['college', 'university', 'unilife', 'campus', 'dorm', 'freshman', 'sophomore', 'junior', 'senior', 'grad school', 'major', 'degree', 'admissions', 'frat', 'sorority', 'greek life'],
+  highschool: ['high school', 'highschool', 'prom', 'homecoming', 'graduation', 'class of', 'valedictorian', 'ap class', 'ib diploma'],
 
-  // SPECIFIC UNIVERSITIES
-  universities: ['harvard', 'yale', 'princeton', 'stanford', 'mit', 'caltech', 'duke', 'vanderbilt', 'notre dame', 'georgetown', 'emory', 'columbia', 'cornell', 'dartmouth', 'upenn', 'penn ', 'brown university', 'tufts', 'northeastern', 'boston university', 'boston college', 'carnegie mellon', 'rice university', 'tulane', 'usc trojan', 'nyu', 'johns hopkins', 'northwestern', 'uchicago', 'chicago', 'pepperdine', 'baylor', 'smu', 'howard', 'spelman', 'morehouse', 'hbcu', 'umich', 'wolverines', 'go blue', 'ucla', 'ucb', 'berkeley', 'ucsd', 'ucsb', 'ucdavis', 'ucirvine', 'ohio state', 'buckeye', 'florida', 'gator', 'fsu', 'seminole', 'ucf', 'knight ', 'ut austin', 'longhorn', 'texas a&m', 'aggie', 'penn state', 'nittany', 'uva', 'cavalier', 'unc', 'tar heel', 'nc state', 'georgia tech', 'yellow jacket', 'uga', 'bulldog', 'washington husky', 'wisconsin', 'badger', 'illini', 'purdue', 'boilermaker', 'indiana university', 'hoosier', 'minnesota', 'gopher', 'iowa', 'hawkeye', 'michigan state', 'spartan', 'rutgers', 'maryland', 'terp', 'virginia tech', 'hokie', 'pitt', 'panther', 'uconn', 'colorado', 'arizona', 'sun devil', 'utah', 'byu', 'oregon', 'duck', 'beaver', 'south carolina', 'gamecock', 'clemson', 'lsu', 'tiger ', 'alabama', 'roll tide', 'auburn', 'razorback', 'tennessee', 'volunteer', 'kentucky wildcat', 'ole miss', 'oxford', 'cambridge', 'mba', 'law school', 'med school', 'business school', 'phd', 'pre med', 'pre law'],
+  // SPECIFIC UNIVERSITIES — only multi-char unique identifiers retained
+  universities: ['harvard', 'yale', 'princeton', 'stanford', 'caltech', 'duke', 'vanderbilt', 'notre dame', 'georgetown', 'emory', 'columbia', 'cornell', 'dartmouth', 'upenn', 'penn ', 'brown university', 'tufts', 'northeastern', 'boston university', 'boston college', 'carnegie mellon', 'rice university', 'tulane', 'usc trojan', 'nyu student', 'johns hopkins', 'northwestern', 'uchicago', 'chicago', 'pepperdine', 'baylor', 'howard', 'spelman', 'morehouse', 'hbcu', 'umich', 'wolverines', 'go blue', 'ucla', 'uc berkeley', 'berkeley', 'ucsd', 'ucsb', 'ucdavis', 'ucirvine', 'ohio state', 'buckeye', 'florida', 'gator', 'seminole', 'knight ', 'ut austin', 'longhorn', 'texas a&m', 'aggie', 'penn state', 'nittany', 'uva grad', 'cavalier', 'unc chapel', 'tar heel', 'nc state', 'georgia tech', 'yellow jacket', 'bulldog', 'washington husky', 'wisconsin', 'badger', 'illini', 'purdue', 'boilermaker', 'indiana university', 'hoosier', 'minnesota', 'gopher', 'iowa', 'hawkeye', 'michigan state', 'spartan', 'rutgers', 'maryland', 'terp', 'virginia tech', 'hokie', 'pitt', 'panther', 'uconn', 'colorado', 'arizona', 'sun devil', 'utah', 'oregon', 'duck', 'beaver', 'south carolina', 'gamecock', 'clemson', 'lsu student', 'tiger ', 'alabama', 'roll tide', 'auburn', 'razorback', 'tennessee', 'kentucky wildcat', 'ole miss', 'oxford', 'cambridge', 'mba program', 'law school', 'med school', 'business school', 'phd student', 'pre med', 'pre law'],
 
   // WALL ART & ROOMS
-  wallart: ['poster', 'wall art', 'print', 'gallery wall', 'canvas', 'art print', 'wall decor', 'tapestry', 'collage wall', 'framed art', 'aesthetic wall'],
+  wallart: ['poster', 'wall art', 'gallery wall', 'canvas', 'art print', 'wall decor', 'tapestry', 'collage wall', 'framed art', 'aesthetic wall'],
   aestheticrooms: ['aesthetic room', 'room aesthetic', 'dark academia', 'cottagecore', 'coquette', 'soft girl', 'pinterest room', 'boho room', 'minimalist room', 'kawaii', 'fairy lights', 'led lights', 'room inspo', 'bedroom inspo'],
 
   // CARS / GAMING / ANIME / KPOP
-  cars: ['car ', 'auto', 'vehicle', 'truck', 'suv', 'sedan', 'coupe', 'supercar', 'sports car', 'jdm', 'bmw', 'mercedes', 'ferrari', 'lamborghini', 'porsche', 'mustang', 'tesla', 'electric vehicle', 'ev ', 'car meet', 'car show', 'detailing', 'drift', 'motorbike', 'motorcycle', 'harley', 'ducati'],
-  gaming: ['gaming', 'gamer', 'video game', 'playstation', 'xbox', 'nintendo', 'pc gaming', 'twitch', 'streamer', 'esports', 'fortnite', 'minecraft', 'roblox', 'call of duty', 'valorant', 'league of legends', 'console', 'rpg', 'fps', 'mmo'],
+  cars: ['cars', 'car restoration', 'auto', 'vehicle', 'truck', 'suv life', 'sedan', 'coupe', 'supercar', 'sports car', 'jdm cars', 'bmw car', 'mercedes', 'ferrari', 'lamborghini', 'porsche', 'mustang', 'tesla', 'electric vehicle', 'ev car', 'car meet', 'car show', 'detailing', 'drift', 'motorbike', 'motorcycle', 'harley', 'ducati'],
+  gaming: ['gaming', 'gamer', 'video game', 'playstation', 'xbox', 'nintendo', 'pc gaming', 'twitch', 'streamer', 'esports', 'fortnite', 'minecraft', 'roblox', 'call of duty', 'valorant', 'league of legends', 'console'],
   anime: ['anime', 'manga', 'cosplay', 'otaku', 'weeb', 'naruto', 'one piece', 'attack on titan', 'demon slayer', 'jujutsu kaisen', 'dragon ball', 'my hero academia', 'studio ghibli', 'vtuber'],
-  kpop: ['kpop', 'k-pop', 'bts', 'blackpink', 'stray kids', 'twice', 'nct', 'seventeen', 'aespa', 'newjeans', 'korean pop', 'kdrama', 'k-drama', 'idol'],
-  concerts: ['concert', 'festival', 'live music', 'music festival', 'tour', 'gig', 'coachella', 'lollapalooza', 'edm', 'rave', 'dj ', 'setlist', 'moshpit', 'backstage'],
+  kpop: ['kpop', 'k-pop', 'bts army', 'blackpink', 'stray kids', 'twice', 'seventeen', 'aespa', 'newjeans', 'korean pop', 'kdrama', 'k-drama', 'idol'],
+  concerts: ['concert', 'festival', 'live music', 'music festival', 'tour', 'live gig', 'coachella', 'lollapalooza', 'edm festival', 'rave', 'dj life', 'setlist', 'moshpit', 'backstage'],
 
   // PREGNANCY / PARENTING
   pregnancy: ['pregnant', 'pregnancy', 'baby bump', 'maternity', 'expecting', 'trimester', 'newborn', 'infant', 'baby shower', 'gender reveal'],
-  parenting: ['mom ', 'dad ', 'mother', 'father', 'momlife', 'dadlife', 'toddler', 'kids', 'children', 'family', 'parent', 'motherhood', 'fatherhood', 'gentle parenting'],
+  parenting: ['mom blog', 'mom life', 'new mom', 'dad blog', 'dad life', 'new dad', 'mother', 'father', 'momlife', 'dadlife', 'toddler', 'kids', 'children', 'family', 'parent', 'motherhood', 'fatherhood', 'gentle parenting'],
 
   // LUXURY GOODS / PLANTS / BOOKS
   luxurygoods: ['watch', 'rolex', 'omega', 'cartier', 'louis vuitton', 'birkin', 'jewelry', 'diamond', 'gold chain', 'flex'],
@@ -1096,26 +1125,26 @@ const KEYWORDS = {
 
   // ASTROLOGY / DIY / OUTDOOR
   astrology: ['astrology', 'zodiac', 'horoscope', 'spiritual', 'manifest', 'crystal', 'tarot', 'witch', 'moon ', 'mercury retrograde', 'birth chart', 'chakra', 'angel number', 'oracle'],
-  diy: ['diy', 'craft', 'sewing', 'crochet', 'embroidery', 'macrame', 'resin', 'polymer clay', 'candle making', 'soap making', 'woodworking', 'maker'],
-  outdoor: ['hiking', 'camping', 'outdoor', 'mountain', 'trail', 'national park', 'backpacking', 'climbing', 'kayak', 'fishing', 'wilderness', 'overlanding', 'ski', 'snowboard'],
+  diy: ['diy craft', 'diy project', 'diy home', 'craft', 'sewing', 'crochet', 'embroidery', 'macrame', 'resin', 'polymer clay', 'candle making', 'soap making', 'woodworking', 'maker'],
+  outdoor: ['hiking', 'hiking trail', 'camping', 'summer camp', 'outdoor', 'mountain', 'trail running', 'national park', 'backpacking', 'rock climbing', 'climbing', 'kayak', 'fishing', 'wilderness', 'overlanding', 'skiing', 'snowboard'],
 
   // ARCHITECTURE / VINTAGE
   architecture: ['architecture', 'architect', 'building', 'cityscape', 'skyscraper', 'facade', 'historic building', 'modern architecture'],
-  vintage: ['vintage', 'antique', 'retro', '80s', '90s', 'y2k', 'preloved', 'consignment', 'vintage finds', 'vintage shop', 'flea market'],
+  vintage: ['vintage', 'antique', 'retro', '80s style', '90s style', 'y2k aesthetic', 'preloved', 'consignment', 'vintage finds', 'vintage shop', 'flea market'],
 
   // FOOD CONTENT / RECOVERY
   foodcontent: ['mukbang', 'food video', 'recipe video', 'food challenge', 'asmr food', 'taste test', 'street food', 'food tour'],
   recovery: ['sober', 'sobriety', 'recovery', 'addiction', 'alcohol free', 'drug free', '12 step', 'eating disorder', 'anorexia', 'bulimia'],
 
   // PRODUCTIVITY / SPORTS / FOOTBALL
-  productivity: ['productivity', 'pomodoro', 'notion', 'bullet journal', 'bujo', 'planner', 'morning routine', 'night routine', 'desk setup', 'work from home', 'wfh', 'time management', 'focus', 'deep work'],
+  productivity: ['productivity', 'pomodoro', 'notion', 'bullet journal', 'bujo', 'planner', 'morning routine', 'night routine', 'desk setup', 'work from home', 'time management', 'focus', 'deep work'],
   sports: ['sport', 'athlete', 'team', 'varsity', 'tournament', 'league', 'playoffs', 'sports training', 'competition'],
-  football: ['football', 'nfl', 'quarterback', 'touchdown', 'super bowl', 'fantasy football', 'tailgate', 'wide receiver', 'soccer', 'premier league', 'la liga', 'mls', 'fifa', 'striker', 'goalkeeper', 'futbol'],
+  football: ['football', 'nfl team', 'quarterback', 'touchdown', 'super bowl', 'fantasy football', 'tailgate', 'wide receiver', 'soccer', 'premier league', 'la liga', 'fifa', 'striker', 'goalkeeper', 'futbol'],
 
   // DANCE / PODCAST / CUISINES
   dance: ['dance', 'dancer', 'choreography', 'ballet', 'hip hop dance', 'contemporary', 'ballroom', 'salsa', 'tango', 'tiktok dance', 'freestyle dance'],
   podcast: ['podcast', 'youtube', 'youtuber', 'vlog', 'creator economy', 'subscriber', 'video essay'],
-  cuisines: ['italian food', 'mexican food', 'indian food', 'japanese food', 'thai food', 'chinese food', 'korean food', 'mediterranean', 'sushi', 'ramen', 'tacos', 'pizza', 'pasta', 'curry', 'dim sum', ' pho ', 'vietnamese', 'ethiopian', 'jamaican food', 'brazilian food', 'greek food'],
+  cuisines: ['italian food', 'mexican food', 'indian food', 'japanese food', 'thai food', 'chinese food', 'korean food', 'mediterranean', 'sushi', 'ramen', 'tacos', 'pizza', 'pasta', 'curry', 'dim sum', 'pho noodle', 'vietnamese', 'ethiopian', 'jamaican food', 'brazilian food', 'greek food'],
 
   // SELF-CARE / TECH REVIEWS / ECOMMERCE / VOLUNTEERING
   selfcare: ['self care', 'self love', 'selfcare', 'journal', 'gratitude', 'affirmation', 'burnout', 'glow up', 'mental health day'],
@@ -1124,20 +1153,39 @@ const KEYWORDS = {
   volunteering: ['volunteer', 'community service', 'food bank', 'habitat for humanity', 'red cross', 'donation drive', 'humanitarian', 'mission trip', 'pay it forward'],
 };
 
+// Minimum sum-of-trigger-lengths for a category to be considered a real
+// match. With a 4-char minimum trigger, requiring score ≥ 4 means at least
+// one full keyword must match.
+const MIN_CATEGORY_SCORE = 4;
+
 function pickCategories(niche) {
-  // Pad with spaces and normalize hyphens/underscores → spaces so keywords
-  // only match at word starts. This prevents substring false positives like
-  // 'art' matching "startup", 'pho' matching "photographer", 'app' matching
-  // "happen", 'home' matching "phomenon", 'eat' matching "creator", etc.
+  // Normalize the input: lowercase, hyphens/punctuation → spaces, collapse
+  // whitespace, and pad with spaces so triggers can be matched at word starts.
   const n = ' ' + niche.toLowerCase().replace(/[-_/.,!?]/g, ' ').replace(/\s+/g, ' ').trim() + ' ';
-  const matched = [];
+
+  // Score every category by total length of triggers that matched at a word
+  // boundary. Longer / more specific triggers contribute more weight.
+  const scored = [];
   for (const [cat, words] of Object.entries(KEYWORDS)) {
-    if (words.some(w => {
+    let score = 0;
+    for (const w of words) {
+      // Triggers with intentional leading/trailing spaces (e.g. 'mom ', 'penn ',
+      // ' pho ') keep them; otherwise we prepend a space to enforce word-start.
+      // Hyphens are normalized so 'k-pop' matches "k pop" after input cleanup.
       const kw = (w.startsWith(' ') ? w : ' ' + w).replace(/[-_]/g, ' ');
-      return n.includes(kw);
-    })) matched.push(cat);
+      if (n.includes(kw)) score += w.trim().length;
+    }
+    if (score > 0) scored.push([cat, score]);
   }
-  return matched; // may be empty — caller handles no-match case
+
+  // Sort by descending score so the most-specific category wins.
+  scored.sort((a, b) => b[1] - a[1]);
+
+  // STRICT: drop matches whose top score is below the threshold (treated as
+  // no-match by the caller) and only return the top 2 categories. This is the
+  // single most important guard against unrelated categories bleeding in.
+  if (scored.length === 0 || scored[0][1] < MIN_CATEGORY_SCORE) return [];
+  return scored.slice(0, 2).map(([cat]) => cat);
 }
 
 // ---------- SCORING ----------
@@ -1218,12 +1266,24 @@ function getReasonText(tag, accountSize, score) {
 // ---------- BUILD RESULTS ----------
 function generate(niche, size, goal) {
   const cats = pickCategories(niche);
-  const noMatch = cats.length === 0;
 
+  // No-match: do NOT show any hashtags. The render layer will display the
+  // friendly "try being more specific" UI. This is intentional — bleeding
+  // generic tags into a no-match result is what made the old version feel
+  // loose.
+  if (cats.length === 0) {
+    return {
+      noMatch: true,
+      high: [], broad: [], niche_anchors: [],
+      message: "We couldn't find an exact match for your niche. Try being more specific — e.g. 'yoga instructor', 'vegan food blogger', 'real estate agent in Miami', 'swim coach for teens'.",
+    };
+  }
+
+  // Pull tags only from the top 2 matched categories, plus 2 universal
+  // growth tags (down from 3). Strict-by-default.
   const pool = [];
   cats.forEach(c => pool.push(...DB[c]));
-  // always blend in 2-3 general growth tags
-  pool.push(...DB.general);
+  pool.push(...DB.general.slice(0, 2));
 
   // dedupe
   const seen = new Set();
@@ -1237,16 +1297,6 @@ function generate(niche, size, goal) {
     const score = scoreHashtag(h, size, goal);
     return { ...h, score, why: getReasonText(h, size, score) };
   }).sort((a, b) => b.score - a.score);
-
-  // No-match path: only show the general growth tags as a single tier
-  if (noMatch) {
-    return {
-      noMatch: true,
-      high: scored,
-      broad: [],
-      niche_anchors: [],
-    };
-  }
 
   let high = scored.filter(h => h.score >= 75).slice(0, 7);
   let broad = scored.filter(h => h.score >= 50 && h.score < 75).slice(0, 6);
@@ -1293,19 +1343,34 @@ function tierHTML(title, subtitle, badgeClass, items, tierLabel) {
   `;
 }
 
+function escapeHTML(s) {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
 function render(results) {
-  const { high, broad, niche_anchors, noMatch } = results;
+  const { high, broad, niche_anchors, noMatch, message } = results;
+  const container = document.getElementById('results');
+
+  // No-match path: render the friendly empty-state and stop. No tags, no
+  // copy section, no animations to wire up.
+  if (noMatch) {
+    container.innerHTML = `
+      <div class="no-match-card">
+        <div class="icon">🔍</div>
+        <h3>No exact match found</h3>
+        <p class="message">${escapeHTML(message || "We couldn't find an exact match for your niche. Try being more specific.")}</p>
+        <p class="examples">Try: 'yoga instructor', 'skincare brand', 'food blogger', 'real estate agent', 'swim coach'</p>
+      </div>
+    `;
+    container.classList.add('visible');
+    container.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    return;
+  }
+
   const all = [...high, ...broad, ...niche_anchors];
   const copyText = all.map(h => '#' + h.tag).join(' ');
 
-  const noMatchHTML = noMatch ? `
-    <div class="no-match-note">
-      We couldn't find an exact match for your niche. Here are general growth hashtags — try being more specific (e.g. 'yoga studio', 'food blogger', 'real estate agent').
-    </div>
-  ` : '';
-
   const html = `
-    ${noMatchHTML}
     ${tierHTML('High Leverage', 'Your best chance at appearing in top posts', 'green', high, 'Tier 1')}
     ${tierHTML('Broad Reach', 'High exposure, harder to stand out', 'yellow', broad, 'Tier 2')}
     ${tierHTML('Niche Anchors', 'Own your corner — small but loyal audience', 'blue', niche_anchors, 'Tier 3')}
@@ -1317,7 +1382,6 @@ function render(results) {
     </div>
   `;
 
-  const container = document.getElementById('results');
   container.innerHTML = html;
   container.classList.add('visible');
 
