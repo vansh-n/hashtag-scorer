@@ -1,0 +1,1368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Hashtag Scorer — Find the Right Tags to Grow</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --navy: #0A0F2C;
+    --navy-light: #141a3d;
+    --white: #ffffff;
+    --blue: #3B82F6;
+    --green: #10B981;
+    --yellow: #F59E0B;
+    --purple: #6366F1;
+    --gray: #6b7280;
+    --gray-light: #e5e7eb;
+    --gray-bg: #f9fafb;
+  }
+  html, body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--navy);
+    color: #1f2937;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+  .page {
+    max-width: 880px;
+    margin: 0 auto;
+    padding: 48px 20px 80px;
+  }
+  header {
+    text-align: center;
+    margin-bottom: 40px;
+    color: var(--white);
+  }
+  header .logo {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(59,130,246,0.15);
+    color: #93c5fd;
+    padding: 6px 14px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    margin-bottom: 18px;
+  }
+  header h1 {
+    font-size: clamp(28px, 5vw, 42px);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    margin-bottom: 12px;
+    line-height: 1.15;
+  }
+  header p {
+    color: #9ca3af;
+    font-size: 16px;
+    max-width: 560px;
+    margin: 0 auto;
+    line-height: 1.6;
+  }
+  .card {
+    background: var(--white);
+    border-radius: 20px;
+    padding: 36px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.35);
+    margin-bottom: 28px;
+  }
+  .form-grid {
+    display: grid;
+    gap: 22px;
+  }
+  .field label {
+    display: block;
+    font-weight: 600;
+    font-size: 14px;
+    margin-bottom: 8px;
+    color: #111827;
+  }
+  .field .hint {
+    font-size: 12px;
+    color: var(--gray);
+    font-weight: 400;
+    margin-left: 6px;
+  }
+  .field .sublabel {
+    font-size: 12px;
+    color: var(--gray);
+    margin-bottom: 10px;
+    line-height: 1.5;
+  }
+  .no-match-note {
+    background: #fef3c7;
+    border: 1px solid #fcd34d;
+    color: #92400e;
+    border-radius: 12px;
+    padding: 14px 16px;
+    font-size: 13px;
+    line-height: 1.5;
+    margin-bottom: 20px;
+  }
+  .field input,
+  .field select {
+    width: 100%;
+    padding: 14px 16px;
+    border: 1.5px solid var(--gray-light);
+    border-radius: 12px;
+    font-size: 15px;
+    font-family: inherit;
+    background: var(--gray-bg);
+    transition: all 0.2s;
+  }
+  .field input:focus,
+  .field select:focus {
+    outline: none;
+    border-color: var(--blue);
+    background: var(--white);
+    box-shadow: 0 0 0 4px rgba(59,130,246,0.12);
+  }
+  .submit-btn {
+    width: 100%;
+    margin-top: 8px;
+    padding: 18px;
+    background: var(--blue);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 700;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 8px 24px rgba(59,130,246,0.35);
+  }
+  .submit-btn:hover { transform: translateY(-1px); background: #2563eb; }
+  .submit-btn:active { transform: translateY(0); }
+
+  #results { display: none; }
+  #results.visible { display: block; animation: fadeUp 0.5s ease both; }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .tier {
+    margin-bottom: 28px;
+    animation: fadeUp 0.5s ease both;
+  }
+  .tier:nth-child(2) { animation-delay: 0.1s; }
+  .tier:nth-child(3) { animation-delay: 0.2s; }
+
+  .tier-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+  .tier-badge {
+    padding: 5px 12px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    color: white;
+  }
+  .tier-badge.green { background: var(--green); }
+  .tier-badge.yellow { background: var(--yellow); }
+  .tier-badge.blue { background: var(--purple); }
+  .tier-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: #111827;
+  }
+  .tier-subtitle {
+    font-size: 13px;
+    color: var(--gray);
+    margin-bottom: 16px;
+  }
+
+  .hashtag-list {
+    display: grid;
+    gap: 12px;
+  }
+  .hashtag-item {
+    background: var(--gray-bg);
+    border: 1px solid var(--gray-light);
+    border-radius: 14px;
+    padding: 16px 18px;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .hashtag-item:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 18px rgba(0,0,0,0.06);
+  }
+  .hashtag-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+  }
+  .hashtag-name {
+    font-size: 16px;
+    font-weight: 700;
+    color: #111827;
+  }
+  .hashtag-score {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--gray);
+  }
+  .progress-track {
+    height: 6px;
+    background: var(--gray-light);
+    border-radius: 999px;
+    overflow: hidden;
+    margin-bottom: 8px;
+  }
+  .progress-fill {
+    height: 100%;
+    width: 0;
+    border-radius: 999px;
+    transition: width 1s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .progress-fill.green { background: var(--green); }
+  .progress-fill.yellow { background: var(--yellow); }
+  .progress-fill.blue { background: var(--purple); }
+  .hashtag-explain {
+    font-size: 13px;
+    color: var(--gray);
+    line-height: 1.5;
+  }
+
+  .copy-section {
+    background: var(--navy-light);
+    color: white;
+    border-radius: 20px;
+    padding: 28px;
+    margin-top: 12px;
+  }
+  .copy-section h3 {
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+  .copy-section p {
+    font-size: 13px;
+    color: #9ca3af;
+    margin-bottom: 16px;
+  }
+  .copy-block {
+    background: rgba(0,0,0,0.3);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 12px;
+    padding: 16px;
+    font-size: 14px;
+    color: #cbd5e1;
+    word-break: break-word;
+    line-height: 1.7;
+    margin-bottom: 14px;
+    max-height: 160px;
+    overflow-y: auto;
+  }
+  .copy-btn {
+    width: 100%;
+    padding: 14px;
+    background: var(--blue);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 700;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .copy-btn:hover { background: #2563eb; }
+  .copy-btn.copied { background: var(--green); }
+
+  .empty-note {
+    text-align: center;
+    padding: 24px;
+    color: var(--gray);
+    font-size: 14px;
+  }
+
+  @media (max-width: 600px) {
+    .card { padding: 24px; }
+    .page { padding: 32px 16px 60px; }
+  }
+</style>
+</head>
+<body>
+  <div class="page">
+    <header>
+      <span class="logo">Organic Growth Toolkit</span>
+      <h1>Hashtag Scorer</h1>
+      <p>Find the right hashtags to maximize your organic Instagram reach. Built on a data-driven scoring methodology that analyzes volume, competition, and niche relevance.</p>
+    </header>
+
+    <div class="card">
+      <form id="scoreForm" class="form-grid">
+        <div class="field">
+          <label>What's your niche?</label>
+          <div class="sublabel">Describe what you offer, create, or sell — e.g. 'swim coach for teens', 'vegan food blogger', 'mental health therapist', 'real estate agent in Miami', 'AI startup founder'</div>
+          <input id="niche" type="text" placeholder="e.g. swim coach, food blogger, nonprofit founder, skincare brand..." required />
+        </div>
+        <div class="field">
+          <label>Account Size</label>
+          <select id="size">
+            <option value="small">Small — Under 1,000 followers</option>
+            <option value="medium" selected>Medium — 1,000 to 10,000 followers</option>
+            <option value="growing">Growing — Over 10,000 followers</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Primary Goal</label>
+          <select id="goal">
+            <option value="reach">Reach — I want new people to discover my account</option>
+            <option value="engagement" selected>Engagement — I want more likes, comments, saves</option>
+            <option value="followers">Followers — I want to grow my follower count</option>
+          </select>
+        </div>
+        <button type="submit" class="submit-btn">Score My Hashtags</button>
+      </form>
+    </div>
+
+    <div id="results"></div>
+  </div>
+
+<script>
+// ---------- HASHTAG DATABASE ----------
+// volume: 'low' (<50k), 'medium' (50k-500k), 'high' (>500k)
+// competition: 'low' | 'medium' | 'high'
+// relevance: 'exact' | 'adjacent' | 'general'
+// Helper to build entries quickly. Default volume/competition heuristics:
+// - very specific niche tags = low/low
+// - mid-tier niche tags = medium/medium
+// - mass-appeal tags = high/high
+// Deterministic per-tag micro-score in [-12, +12], derived from the tag name
+// so two hashtags with identical volume/competition/relevance still produce
+// different final scores (breaks ties so tier rankings don't flatten).
+const microFor = (name) => {
+  let h = 2166136261;
+  for (let i = 0; i < name.length; i++) {
+    h ^= name.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return ((h >>> 0) % 25) - 12; // 0..24 → -12..12
+};
+const m = (tag, volume, competition, relevance = 'exact') => ({
+  tag, volume, competition, relevance, micro: microFor(tag),
+});
+
+const DB = {
+  // FITNESS & SPORTS
+  swimming: [
+    m('swimcoach','low','low'), m('swimlife','medium','medium'), m('swimtraining','low','low'),
+    m('masterswimming','low','low'), m('poolworkout','low','low'), m('swimfast','low','low'),
+    m('triathlete','medium','medium'), m('openwater','medium','medium'), m('swimdrills','low','low'),
+    m('youthswimming','low','low'), m('swimteam','medium','medium'), m('swimfitness','low','low'),
+    m('swimperformance','low','low'), m('aquaticsfitness','low','low'), m('swimcoaching','low','low'),
+  ],
+  basketball: [
+    m('basketballcoach','medium','medium'), m('hooplife','medium','medium'), m('ballislife','high','high'),
+    m('basketballtraining','medium','medium'), m('courtlife','medium','medium'), m('basketballskills','low','low'),
+    m('nbatraining','medium','medium'), m('youthbasketball','low','low'), m('basketballplayer','high','high'),
+    m('buckets','medium','medium'),
+  ],
+  fitness: [
+    m('fitnessmotivation','high','high'), m('gymlife','high','high'), m('personaltrainer','high','high'),
+    m('workoutoftheday','high','high'), m('strengthtraining','medium','medium'), m('fitfam','high','high'),
+    m('crossfit','high','high'), m('homeworkout','medium','medium'), m('fitnesscoach','medium','medium'),
+    m('healthylifestyle','high','high'),
+  ],
+  yoga: [
+    m('yogalife','high','high'), m('yogaeveryday','high','high'), m('yogateacher','medium','medium'),
+    m('mindfulmovement','low','low'), m('breathwork','low','low'), m('yogacommunity','medium','medium'),
+    m('yogapractice','medium','medium'), m('wellnesscoach','medium','medium'), m('holistichealth','medium','medium'),
+    m('yogajourney','medium','medium'),
+  ],
+  running: [
+    m('runningcommunity','medium','medium'), m('marathontraining','medium','medium'), m('runnersworld','high','high'),
+    m('trailrunning','medium','medium'), m('5k','medium','medium'), m('runcoach','low','low'),
+    m('ultramarathon','low','low'), m('roadrunning','low','low'), m('runningmotivation','medium','medium'),
+    m('raceday','medium','medium'),
+  ],
+
+  // FOOD & BEVERAGE
+  foodblog: [
+    m('foodblogger','high','high'), m('foodphotography','high','high'), m('foodie','high','high'),
+    m('instafood','high','high'), m('foodstyling','medium','medium'), m('recipeshare','low','low'),
+    m('homecooking','medium','medium'), m('foodcontent','low','low'), m('eatingwell','medium','medium'),
+    m('foodblog','medium','medium'),
+  ],
+  restaurant: [
+    m('restaurantlife','medium','medium'), m('cheflife','high','high'), m('foodstagram','high','high'),
+    m('localfood','medium','medium'), m('diningout','medium','medium'), m('restaurantmarketing','low','low'),
+    m('foodservice','low','low'), m('hospitality','medium','medium'), m('restaurantowner','low','low'),
+    m('culinaryarts','medium','medium'),
+  ],
+  baking: [
+    m('bakinglife','medium','medium'), m('homebaker','medium','medium'), m('sourdough','high','high'),
+    m('pastrychef','medium','medium'), m('cakesofinstagram','high','high'), m('breadbaking','medium','medium'),
+    m('bakery','high','high'), m('sweettreats','medium','medium'), m('bakingfromscratch','low','low'),
+    m('cakeart','medium','medium'),
+  ],
+  nutrition: [
+    m('healthyfood','high','high'), m('mealprep','high','high'), m('cleaneating','high','high'),
+    m('nutritionist','medium','medium'), m('healthyrecipes','high','high'), m('plantbased','high','high'),
+    m('wholefoods','medium','medium'), m('macros','medium','medium'), m('dietitian','low','low'),
+    m('nutritiontips','low','low'),
+  ],
+  coffee: [
+    m('coffeeshop','high','high'), m('coffeelife','high','high'), m('specialtycoffee','medium','medium'),
+    m('baristalife','medium','medium'), m('coffeeroaster','low','low'), m('thirdwavecoffee','low','low'),
+    m('espresso','high','high'), m('coffeeculture','medium','medium'), m('coffeeaddict','high','high'),
+    m('latteart','high','high'),
+  ],
+
+  // HEALTH & WELLNESS
+  mentalhealth: [
+    m('mentalhealthmatters','high','high'), m('therapyworks','medium','medium'), m('anxietyrelief','medium','medium'),
+    m('mentalwellness','high','high'), m('healingjourney','high','high','adjacent'), m('therapist','high','high'),
+    m('selfcare','high','high','adjacent'), m('mentalhealthawareness','high','high'),
+    m('behavioralhealth','low','low'), m('emotionalhealth','medium','medium'),
+  ],
+  lifecoaching: [
+    m('lifecoach','high','high'), m('mindsetcoach','medium','medium'), m('personaldevelopment','high','high'),
+    m('selfimprovement','high','high'), m('growthmindset','high','high'), m('coachinglife','medium','medium'),
+    m('executivecoach','low','low'), m('mindsetshift','medium','medium'), m('motivationaldaily','medium','medium'),
+    m('successmindset','medium','medium'),
+  ],
+  skincare: [
+    m('skincareroutine','high','high'), m('skincareobsessed','medium','medium'), m('glowingskin','medium','medium'),
+    m('beautytips','high','high'), m('cleanbeauty','medium','medium'), m('skincareaddict','high','high'),
+    m('naturalskincare','medium','medium'), m('dermatology','medium','medium'), m('acneskincare','low','low'),
+    m('skincarecommunity','medium','medium'),
+  ],
+  holistic: [
+    m('holistichealth','medium','medium'), m('naturalhealing','medium','medium'), m('alternativemedicine','low','low'),
+    m('herbalremedies','low','low'), m('functionalhealth','low','low'), m('integrativemedicine','low','low'),
+    m('naturopath','low','low'), m('holisticwellness','medium','medium'), m('energyhealing','low','low'),
+    m('mindbodyspirit','medium','medium'),
+  ],
+
+  // EDUCATION & YOUTH
+  tutoring: [
+    m('tutoring','medium','medium'), m('studytips','high','high'), m('homeschool','high','high'),
+    m('educationmatters','medium','medium'), m('studygram','medium','medium'), m('learningisfun','medium','medium'),
+    m('academicsuccess','low','low'), m('studentlife','high','high'), m('testprep','low','low'),
+    m('educationfirst','low','low'),
+  ],
+  youth: [
+    m('youthempowerment','low','low'), m('youthleadership','low','low'), m('youngminds','low','low'),
+    m('futuregeneration','low','low'), m('youthprogram','low','low'), m('kidsactivities','medium','medium'),
+    m('afterschool','low','low'), m('mentorship','medium','medium'), m('youthadvocacy','low','low'),
+    m('teensofinstagram','medium','medium'),
+  ],
+  edtech: [
+    m('onlinelearning','high','high'), m('elearning','high','high'), m('edtech','medium','medium'),
+    m('onlinecourse','medium','medium'), m('digitaleducation','low','low'), m('skillbuilding','low','low'),
+    m('courselaunch','low','low'), m('teachonline','low','low'), m('knowledgesharing','low','low'),
+    m('learnonline','medium','medium'),
+  ],
+
+  // NONPROFIT & SOCIAL IMPACT
+  nonprofit: [
+    m('nonprofit','high','high'), m('giveback','high','high','adjacent'), m('communityimpact','medium','medium'),
+    m('socialgood','medium','medium'), m('makeadifference','high','high','adjacent'), m('philanthropy','medium','medium'),
+    m('nonprofitleader','low','low'), m('charitywork','medium','medium'), m('volunteerlife','medium','medium','adjacent'),
+    m('changemakers','medium','medium','adjacent'),
+  ],
+  cleanwater: [
+    m('cleanwater','medium','medium'), m('wateraccess','low','low'), m('environmentalimpact','medium','medium'),
+    m('sustainability','high','high','adjacent'), m('climateaction','high','high','adjacent'),
+    m('waterforall','low','low'), m('ecofriendly','high','high','adjacent'), m('greeninitiative','low','low','adjacent'),
+    m('watercrisis','low','low'), m('sustainabledevelopment','medium','medium'),
+  ],
+  community: [
+    m('communitybuilding','medium','medium'), m('localimpact','low','low'), m('grassroots','medium','medium'),
+    m('communityorganizing','low','low'), m('socialchange','medium','medium'), m('equitymatters','low','low'),
+    m('communityfirst','low','low'), m('neighborhoodlove','low','low'), m('civicengagement','low','low'),
+    m('localleader','low','low'),
+  ],
+
+  // BUSINESS & ENTREPRENEURSHIP
+  startup: [
+    m('startuplife','high','high'), m('founder','high','high'), m('entrepreneurship','high','high'),
+    m('startupfounder','medium','medium'), m('venturecapital','medium','medium'), m('pitchdeck','low','low'),
+    m('mvp','low','low'), m('techstartup','medium','medium'), m('founderlife','medium','medium'),
+    m('startupgrind','medium','medium'),
+  ],
+  smallbusiness: [
+    m('smallbusiness','high','high'), m('shoplocal','high','high'), m('smallbusinessowner','high','high'),
+    m('supportsmallbusiness','high','high'), m('womeninbusiness','high','high'), m('sidehustle','high','high'),
+    m('businesstips','medium','medium'), m('entrepreneur','high','high'), m('businessowner','high','high'),
+    m('hustle','high','high'),
+  ],
+  realestate: [
+    m('realestate','high','high'), m('realtor','high','high'), m('realestateinvesting','high','high'),
+    m('propertymanagement','medium','medium'), m('homeselling','medium','medium'), m('homebuying','medium','medium'),
+    m('realestatetips','medium','medium'), m('realtorlife','high','high'), m('housingmarket','medium','medium'),
+    m('realestateinvestor','medium','medium'),
+  ],
+  finance: [
+    m('personalfinance','high','high'), m('investing','high','high'), m('financialfreedom','high','high'),
+    m('wealthbuilding','medium','medium'), m('stockmarket','high','high'), m('moneymanagement','medium','medium'),
+    m('financetips','medium','medium'), m('budgeting','medium','medium'), m('financialindependence','medium','medium'),
+    m('passiveincome','high','high'),
+  ],
+
+  // CREATIVE & CONTENT
+  photography: [
+    m('photography','high','high'), m('photographer','high','high'), m('photooftheday','high','high'),
+    m('portraitphotography','high','high'), m('landscapephotography','high','high'), m('photographylovers','high','high'),
+    m('canonphotography','medium','medium'), m('nikonphotography','medium','medium'), m('naturephotography','high','high'),
+    m('streetphotography','high','high'),
+  ],
+  design: [
+    m('graphicdesign','high','high'), m('designer','high','high'), m('branddesign','medium','medium'),
+    m('logodesign','high','high'), m('creativedesign','medium','medium'), m('uidesign','medium','medium'),
+    m('brandidentity','medium','medium'), m('designinspiration','high','high'), m('visualdesign','low','low'),
+    m('digitalart','high','high'),
+  ],
+  music: [
+    m('musicproducer','high','high'), m('indieartist','medium','medium'), m('newmusic','high','high'),
+    m('musicianlife','medium','medium'), m('songwriting','medium','medium'), m('recordingstudio','medium','medium'),
+    m('musicislife','high','high'), m('unsignedartist','medium','medium'), m('beatmaker','medium','medium'),
+    m('musicpromotion','medium','medium'),
+  ],
+  fashion: [
+    m('fashionblogger','high','high'), m('ootd','high','high'), m('fashionstyle','high','high'),
+    m('streetstyle','high','high'), m('fashionista','high','high'), m('outfitoftheday','high','high'),
+    m('styleinspo','high','high'), m('fashiondesigner','high','high'), m('sustainablefashion','medium','medium'),
+    m('vintage','high','high'),
+  ],
+
+  // TECH & DIGITAL
+  software: [
+    m('softwaredeveloper','medium','medium'), m('coding','high','high'), m('webdev','medium','medium'),
+    m('appdev','low','low'), m('techstartup','medium','medium'), m('programming','high','high'),
+    m('developer','high','high'), m('techcommunity','medium','medium'), m('javascript','high','high'),
+    m('buildinpublic','medium','medium'),
+  ],
+  ai: [
+    m('artificialintelligence','high','high'), m('machinelearning','high','high'), m('datascience','high','high'),
+    m('aitools','medium','medium'), m('deeplearning','medium','medium'), m('chatgpt','high','high'),
+    m('mlops','low','low'), m('pythonprogramming','medium','medium'), m('neuralnetworks','low','low'),
+    m('techtrends','medium','medium'),
+  ],
+  cybersecurity: [
+    m('cybersecurity','high','high'), m('infosec','medium','medium'), m('ethicalhacking','medium','medium'),
+    m('networksecurity','low','low'), m('datasecurity','low','low'), m('cybersec','medium','medium'),
+    m('penetrationtesting','low','low'), m('cloudsecurity','low','low'), m('securityawareness','low','low'),
+    m('hacking','high','high'),
+  ],
+
+  // EVENTS & HOSPITALITY
+  events: [
+    m('eventplanner','high','high'), m('eventdesign','medium','medium'), m('corporateevents','medium','medium'),
+    m('weddingplanner','high','high'), m('eventprofs','medium','low'), m('experiencedesign','low','low','adjacent'),
+    m('eventmarketing','low','low'), m('partyplanner','medium','medium'), m('luxuryevents','medium','medium'),
+    m('eventcoordinator','low','low'),
+  ],
+  wedding: [
+    m('weddingphotography','high','high'), m('bridetobe','high','high'), m('weddingday','high','high'),
+    m('weddingplanning','high','high'), m('weddingdress','high','high'), m('weddinginspo','high','high'),
+    m('brideandgroom','high','high'), m('weddingvenue','medium','medium'), m('weddingstyle','medium','medium'),
+    m('weddingseason','medium','medium'),
+  ],
+  travel: [
+    m('travelblogger','high','high'), m('wanderlust','high','high'), m('travelgram','high','high'),
+    m('instatravel','high','high'), m('traveltheworld','high','high'), m('adventuretravel','medium','medium'),
+    m('digitalnomad','high','high'), m('travelphotography','high','high'), m('exploremore','medium','medium'),
+    m('bucketlist','high','high'),
+  ],
+
+  // FASHION SUB-NICHES
+  streetwear: [
+    m('streetwear','high','high'), m('hypebeast','high','high'), m('urbanfashion','medium','medium'),
+    m('sneakerhead','high','high'), m('streetstyle','high','high'), m('kicks','medium','medium'),
+    m('sneakers','high','high'), m('hypeculture','low','low'), m('streetfashion','medium','medium'),
+    m('drip','medium','medium'), m('sneakercommunity','medium','low'), m('grailedfinds','low','low'),
+  ],
+  luxuryfashion: [
+    m('luxuryfashion','medium','medium'), m('highfashion','medium','medium'), m('designerwear','medium','medium'),
+    m('luxurystyle','medium','medium'), m('couture','medium','medium'), m('fashionweek','high','high','adjacent'),
+    m('runwaystyle','low','low'), m('luxurylifestyle','high','high','adjacent'),
+    m('designerbag','medium','medium'), m('luxurybrands','medium','medium'), m('hautecouture','medium','medium'),
+    m('fashioneditorial','low','low'),
+  ],
+  sustainablefashion: [
+    m('sustainablefashion','medium','medium'), m('slowfashion','medium','low'), m('ethicalfashion','medium','low'),
+    m('ecofashion','medium','low'), m('thrifted','medium','medium'), m('secondhandfashion','medium','low'),
+    m('vintagestyle','medium','medium'), m('upcycledfashion','low','low'), m('consciousfashion','low','low'),
+    m('fashionrevolution','medium','low'), m('zerowastefashion','low','low'), m('thriftflip','medium','low'),
+  ],
+  footwear: [
+    m('sandals','medium','medium'), m('shoesofinstagram','high','high'), m('shoestagram','medium','medium'),
+    m('footwear','medium','medium'), m('shoelover','medium','medium'), m('heels','high','high'),
+    m('boots','high','high','adjacent'), m('sandalseason','low','low'), m('shoecollection','medium','medium'),
+    m('flatshoes','low','low'), m('mules','low','low'), m('shoeaddict','medium','low'),
+  ],
+
+  // TRAVEL SUB-NICHES
+  beach: [
+    m('beachlife','high','high'), m('beachvibes','high','high'), m('oceanview','medium','medium'),
+    m('tropicalvibes','medium','medium'), m('islandlife','medium','medium'), m('resortlife','medium','medium'),
+    m('beachvacation','medium','medium'), m('sunandbeach','low','low'), m('beachholiday','medium','low'),
+    m('oceanlovers','low','low'), m('paradisevibes','medium','medium'), m('resortwear','low','low','adjacent'),
+    m('beachstyle','medium','low'), m('summervibes','high','high','adjacent'), m('tropicalgetaway','low','low'),
+  ],
+  luxurytravel: [
+    m('luxurytravel','medium','medium'), m('luxuryhotel','medium','medium'), m('travelinluxury','low','low'),
+    m('fivestarhotel','low','low'), m('boutiquehotel','low','low'), m('yachtlife','medium','medium','adjacent'),
+    m('villalife','low','low'), m('luxurylifestyle','high','high','adjacent'),
+    m('travelgoals','medium','medium','adjacent'), m('hotellife','medium','medium'),
+  ],
+  digitalnomad: [
+    m('digitalnomad','medium','medium'), m('remotework','medium','medium'), m('laptoplifestyle','low','low'),
+    m('workfromanywhere','low','low'), m('nomadlife','medium','medium'), m('locationindependent','low','low'),
+    m('vanlife','medium','medium','adjacent'), m('slowtravel','low','low'), m('remoteworker','low','low'),
+  ],
+
+  // BEAUTY SUB-NICHES
+  beauty: [
+    m('beautyblogger','high','high'), m('makeuptutorial','high','high'), m('makeuplover','high','high'),
+    m('beautyreels','medium','medium'), m('makeupoftheday','high','high'), m('beautytips','medium','medium'),
+    m('makeupinspo','medium','medium'), m('glammakeup','medium','medium'), m('mua','high','high'),
+    m('beautyinfluencer','medium','medium'), m('motd','medium','medium'), m('makeupbyme','low','low'),
+    m('beautyobsessed','low','low'), m('makeupworld','medium','medium'),
+  ],
+  hair: [
+    m('hairstyle','high','high'), m('haircolor','high','high'), m('naturalhair','high','high'),
+    m('curlyhair','high','high'), m('hairinspo','medium','medium'), m('hairtransformation','medium','medium'),
+    m('hairgoals','medium','medium'), m('hairstylist','high','high'), m('salonlife','medium','medium'),
+    m('braids','high','high'), m('locstyles','medium','low'), m('blondehair','high','high'),
+    m('haircare','high','high'), m('protectivestyles','medium','low'),
+  ],
+
+  // CREATIVE
+  art: [
+    m('artist','high','high'), m('artwork','high','high'), m('painting','high','high'),
+    m('illustration','high','high'), m('artofinstagram','medium','medium'), m('watercolor','high','high'),
+    m('acrylicpainting','medium','medium'), m('sketchbook','medium','medium'), m('digitalartist','medium','medium'),
+    m('artcommunity','medium','low'), m('contemporaryart','medium','medium'), m('abstractart','medium','medium'),
+    m('instaart','medium','medium'), m('artprocess','low','low'),
+  ],
+
+  // BUSINESS / MARKETING
+  marketing: [
+    m('socialmediamarketing','high','high'), m('contentmarketing','high','high'), m('digitalmarketing','high','high'),
+    m('marketingstrategy','medium','medium'), m('brandstrategy','medium','medium'), m('growthhacking','medium','medium'),
+    m('contentcreation','medium','medium'), m('influencermarketing','medium','medium'), m('socialmediatips','medium','medium'),
+    m('instagramgrowth','medium','medium'), m('marketingtips','medium','medium'),
+    m('brandawareness','medium','medium'), m('contentplanning','low','low'),
+  ],
+
+  // EDUCATION — COLLEGE & SCHOOL
+  college: [
+    m('collegelife','high','high'), m('university','high','high'), m('campuslife','medium','medium'),
+    m('dormlife','medium','medium'), m('collegebound','medium','medium'), m('collegestudent','medium','medium'),
+    m('universitylife','medium','medium'), m('studyabroad','medium','medium'), m('collegeadmissions','medium','low'),
+    m('dormroomdecor','medium','low'), m('collegetips','low','low'), m('collegeadvice','low','low'),
+    m('graduatelife','low','low'), m('sorority','medium','medium'), m('fratlife','medium','medium'),
+    m('collegeapplications','low','low'), m('scholarship','medium','medium'),
+    m('firstgenerationcollege','low','low'), m('collegemotivation','low','low'), m('unilife','medium','low'),
+  ],
+  highschool: [
+    m('highschool','high','high'), m('highschoollife','medium','medium'), m('seniorlife','medium','medium'),
+    m('graduation','high','high'), m('prom','high','high'), m('homecoming','medium','medium'),
+    m('classof2026','medium','medium'), m('classof2027','medium','medium'), m('seniorpictures','medium','medium'),
+    m('backtoschool','high','high'), m('schoollife','medium','medium'), m('studygram','medium','medium'),
+    m('notestagram','low','low'), m('examseason','low','low'), m('studymotivation','medium','medium'),
+  ],
+
+  // SPECIFIC US UNIVERSITIES
+  universities: [
+    m('harvard','high','high'), m('yale','high','high'), m('princeton','high','high'),
+    m('columbiauniversity','medium','medium'), m('cornelluniversity','medium','medium'), m('dartmouth','medium','medium'),
+    m('brownuniversity','medium','low'), m('upenn','medium','medium'), m('ivyleague','medium','medium'),
+    m('stanford','high','high'), m('mit','high','high'), m('caltech','medium','medium'),
+    m('dukeuniversity','medium','low'), m('vanderbilt','medium','medium'), m('notredame','medium','medium'),
+    m('georgetown','medium','medium'), m('emory','medium','medium'), m('northeastern','medium','medium'),
+    m('bostoncollege','medium','medium'), m('carnegiemellon','medium','medium'), m('nyustudent','medium','medium'),
+    m('johnshopkins','medium','medium'), m('northwestern','medium','medium'), m('uchicago','medium','medium'),
+    m('howarduniversity','medium','medium'), m('spelmancollege','medium','low'), m('morehouse','medium','medium'),
+    m('hbcu','high','high'), m('hbcugrad','medium','low'),
+    m('ucla','high','high'), m('uclabruins','medium','medium'), m('ucberkeley','high','high'),
+    m('ucsd','medium','medium'), m('ucsb','medium','medium'), m('ucdavis','medium','medium'),
+    m('utaustin','medium','medium'), m('texaslonghorns','medium','medium'), m('texasam','medium','medium'),
+    m('aggies','medium','medium'),
+    m('umich','medium','medium'), m('michiganwolverines','medium','medium'), m('ohiostate','medium','medium'),
+    m('ohiostatebuckeyes','medium','medium'), m('pennstate','medium','medium'), m('michiganstate','medium','medium'),
+    m('purdue','medium','medium'), m('iubloomington','low','low'), m('uwbadgers','low','low'),
+    m('uiuc','medium','low'), m('iowahawkeyes','low','low'),
+    m('uncchapelhill','medium','low'), m('tarheel','medium','medium'), m('georgiatech','medium','medium'),
+    m('ugadawgs','medium','medium'), m('clemsontigers','medium','medium'), m('lsutigers','medium','medium'),
+    m('rolltide','medium','medium'), m('auburntigers','medium','medium'), m('olemiss','medium','medium'),
+    m('ufgators','medium','medium'), m('fsuseminoles','medium','medium'), m('ucfknights','medium','medium'),
+    m('universityofwashington','medium','low'), m('oregonducks','medium','medium'),
+    m('arizonastate','medium','medium'), m('byu','medium','medium'),
+    m('lawschool','medium','medium'), m('medschool','medium','medium'), m('businessschool','medium','medium'),
+    m('mba','high','high'), m('phdlife','medium','medium'), m('premed','medium','medium'),
+    m('engineeringlife','medium','medium'), m('collegesports','medium','medium'), m('ncaa','medium','medium'),
+    m('collegeathlete','medium','medium'), m('secfootball','medium','medium'),
+    m('oxford','high','high'), m('cambridge','high','high'),
+  ],
+
+  // WALL ART & POSTERS
+  wallart: [
+    m('wallart','high','high'), m('posterdesign','medium','medium'), m('gallerywall','medium','medium'),
+    m('artprints','medium','medium'), m('printmaking','medium','medium'), m('wallartdecor','medium','low'),
+    m('vintageposter','medium','low'), m('canvasart','medium','medium'), m('roomdecorinspo','medium','low'),
+    m('gallerywallinspo','low','low'), m('aestheticwallart','medium','low'), m('wallprintable','low','low'),
+    m('tapestry','medium','medium'), m('postersofinstagram','low','low'), m('walldecorideas','low','low'),
+  ],
+
+  // AESTHETIC ROOMS
+  aestheticrooms: [
+    m('aestheticroom','high','high'), m('darkacademia','medium','medium'), m('cottagecore','medium','medium'),
+    m('coquetteaesthetic','medium','medium'), m('softgirl','medium','medium'), m('roominspo','high','high'),
+    m('bedroominspo','high','high'), m('fairylights','medium','medium'), m('ledlights','medium','medium'),
+    m('moodboard','medium','medium'), m('kawaii','high','high'), m('bohoroom','medium','low'),
+    m('minimalistroom','medium','low'), m('pinterestroom','medium','low'), m('cozybedroom','medium','low'),
+    m('lightacademia','low','low'), m('vintagebedroom','low','low'), m('sagegreenaesthetic','low','low'),
+  ],
+
+  // CARS & AUTO
+  cars: [
+    m('carsofinstagram','high','high'), m('carlifestyle','medium','medium'), m('supercar','high','high'),
+    m('jdm','high','high'), m('carshow','medium','medium'), m('carcommunity','medium','medium'),
+    m('exoticcars','medium','medium'), m('carphotography','medium','medium'), m('cardetailing','medium','low'),
+    m('sportscars','medium','medium'), m('musclecar','medium','medium'), m('bmw','high','high'),
+    m('mercedes','high','high'), m('tesla','high','high'), m('electricvehicle','medium','medium'),
+    m('motorcyclelife','medium','medium'), m('bikersofinstagram','medium','medium'), m('drifting','medium','medium'),
+    m('racecar','medium','medium'), m('trucksofinstagram','medium','medium'), m('cargram','medium','low'),
+    m('automotivephotography','low','low'),
+  ],
+
+  // GAMING
+  gaming: [
+    m('gaming','high','high'), m('gamer','high','high'), m('videogames','high','high'),
+    m('gaminglife','medium','medium'), m('pcgaming','medium','medium'), m('gamerlife','medium','medium'),
+    m('twitchstreamer','medium','medium'), m('esports','medium','medium'), m('gamingcommunity','medium','medium'),
+    m('playstation','high','high'), m('xbox','high','high'), m('nintendo','high','high'),
+    m('minecraftbuilds','medium','medium'), m('fortnite','high','high'), m('gamingsetup','medium','medium'),
+    m('streamer','medium','medium'), m('indiegame','medium','low'), m('retrogaming','medium','medium'),
+    m('gamergirl','medium','medium'), m('consolegaming','low','low'),
+  ],
+
+  // ANIME & MANGA
+  anime: [
+    m('anime','high','high'), m('manga','high','high'), m('cosplay','high','high'),
+    m('otaku','high','high'), m('animeart','medium','medium'), m('animelife','medium','medium'),
+    m('animecommunity','medium','low'), m('demonslayer','high','high'), m('jujutsukaisen','high','high'),
+    m('onepiece','high','high'), m('naruto','high','high'), m('studioghibli','high','high'),
+    m('animefanart','medium','medium'), m('mangaart','medium','low'), m('cosplayer','high','high'),
+    m('vtuber','medium','medium'), m('animeedits','medium','medium'), m('weeb','medium','medium'),
+  ],
+
+  // K-POP
+  kpop: [
+    m('kpop','high','high'), m('bts','high','high'), m('blackpink','high','high'),
+    m('kpopedit','high','high'), m('kdrama','high','high'), m('kpopidol','medium','medium'),
+    m('straykids','high','high'), m('seventeen','high','high'), m('aespa','medium','medium'),
+    m('newjeans','medium','medium'), m('kpopstan','medium','medium'), m('koreanculture','medium','medium'),
+    m('kpopfan','medium','low'), m('btsarmy','high','high'), m('kpopmusic','medium','medium'),
+    m('twice','high','high'), m('kpopdance','medium','medium'), m('koreandrama','medium','medium'),
+  ],
+
+  // CONCERTS & FESTIVALS
+  concerts: [
+    m('concertphotography','medium','medium'), m('livemusic','high','high'), m('musicfestival','high','high'),
+    m('concertlife','medium','medium'), m('festivalvibes','medium','medium'), m('coachella','high','high'),
+    m('festivaloutfit','medium','medium'), m('djlife','medium','medium'), m('edm','high','high'),
+    m('rave','medium','medium'), m('tourlife','medium','medium'), m('livemusicphotography','low','low'),
+    m('concertseason','low','low'), m('festivalseason','medium','medium'), m('nightlife','high','high','adjacent'),
+    m('musiclover','medium','medium'),
+  ],
+
+  // PREGNANCY
+  pregnancy: [
+    m('pregnant','high','high'), m('pregnancy','high','high'), m('babybump','high','high'),
+    m('maternitystyle','medium','medium'), m('pregnancyjourney','medium','medium'), m('expectingmother','medium','low'),
+    m('babyshower','high','high'), m('genderreveal','medium','medium'), m('newborn','high','high'),
+    m('newbornphotography','medium','medium'), m('birthstory','medium','low'), m('pregnancyannouncement','medium','medium'),
+    m('maternityphotography','medium','medium'), m('thirdtrimester','low','low'), m('pregnancylife','low','low'),
+  ],
+
+  // PARENTING
+  parenting: [
+    m('momlife','high','high'), m('dadlife','high','high'), m('parenting','high','high'),
+    m('motherhood','high','high'), m('fatherhood','medium','medium'), m('toddlerlife','medium','medium'),
+    m('momsofinstagram','medium','medium'), m('gentleparenting','medium','medium'), m('parentingtips','medium','medium'),
+    m('familytime','high','high'), m('kidsofinstagram','medium','medium'), m('momblogger','medium','medium'),
+    m('sahm','medium','low'), m('positiveparenting','medium','low'), m('momtribe','medium','low'),
+    m('parenthood','medium','medium'), m('raisinglittles','low','low'), m('boymom','medium','medium'),
+    m('girlmom','medium','medium'),
+  ],
+
+  // LUXURY GOODS
+  luxurygoods: [
+    m('luxurylifestyle','high','high'), m('watches','high','high'), m('watchoftheday','medium','medium'),
+    m('rolex','high','high'), m('luxurywatches','medium','medium'), m('designerbag','medium','medium'),
+    m('handbag','high','high'), m('jewelry','high','high'), m('jewelrylover','medium','medium'),
+    m('luxurybrand','medium','medium'), m('richlife','medium','medium','adjacent'), m('wristwatch','medium','medium'),
+    m('finewatches','low','low'), m('luxuryjewelry','medium','medium'), m('highendfashion','medium','medium'),
+    m('bling','medium','medium','adjacent'),
+  ],
+
+  // PLANTS & GARDENING
+  plants: [
+    m('plantsofinstagram','high','high'), m('plantmom','medium','medium'), m('houseplants','high','high'),
+    m('gardening','high','high'), m('succulents','high','high'), m('indoorplants','high','high'),
+    m('botanical','medium','medium'), m('urbangarden','medium','medium'), m('greenthumb','medium','low'),
+    m('floral','high','high'), m('monstera','medium','medium'), m('plantlife','medium','medium'),
+    m('flowers','high','high'), m('gardenlife','medium','low'), m('vegetablegarden','medium','low'),
+    m('plantcommunity','low','low'), m('cactus','high','high'), m('orchid','medium','medium'),
+    m('planttok','medium','low'),
+  ],
+
+  // BOOKS & READING
+  books: [
+    m('bookstagram','high','high'), m('booktok','high','high'), m('reading','high','high'),
+    m('bookworm','medium','medium'), m('currentlyreading','medium','medium'), m('bookreview','medium','medium'),
+    m('bookclub','medium','medium'), m('romancebooks','medium','medium'), m('fantasybooksofinstagram','low','low'),
+    m('selfhelpbooks','medium','medium'), m('bibliophile','medium','medium'), m('booklovers','medium','medium'),
+    m('readingcommunity','medium','low'), m('bookish','medium','medium'), m('authorsofinstagram','medium','medium'),
+    m('mustread','medium','medium'), m('thrillerbooks','low','low'),
+  ],
+
+  // ASTROLOGY & SPIRITUALITY
+  astrology: [
+    m('astrology','high','high'), m('zodiac','high','high'), m('tarot','high','high'),
+    m('crystals','high','high'), m('spirituality','high','high'), m('manifest','high','high'),
+    m('moonphases','medium','medium'), m('fullmoon','high','high'), m('witchcraft','high','high'),
+    m('horoscope','high','high'), m('mercuryretrograde','medium','medium'), m('tarotcommunity','medium','low'),
+    m('angelnumbers','medium','medium'), m('lawofattraction','medium','medium'), m('chakra','medium','medium'),
+    m('spiritualawakening','medium','medium'), m('manifestation','high','high'), m('crystalhealing','medium','medium'),
+  ],
+
+  // DIY & CRAFTS
+  diy: [
+    m('diy','high','high'), m('handmade','high','high'), m('crafting','high','high'),
+    m('diycrafts','medium','medium'), m('crochet','high','high'), m('knitting','high','high'),
+    m('sewing','high','high'), m('embroidery','high','high'), m('macrame','medium','medium'),
+    m('resinart','medium','medium'), m('candlemaking','medium','medium'), m('upcycled','medium','medium'),
+    m('woodworking','high','high'), m('craftcommunity','low','low'), m('makermovement','low','low'),
+    m('polymerclay','medium','low'), m('diyhome','medium','low'),
+  ],
+
+  // OUTDOOR & ADVENTURE
+  outdoor: [
+    m('hiking','high','high'), m('camping','high','high'), m('outdoorlife','medium','medium'),
+    m('nature','high','high'), m('mountains','high','high'), m('hikingadventures','medium','medium'),
+    m('nationalpark','medium','medium'), m('campvibes','medium','low'), m('adventureseeker','medium','medium'),
+    m('rockclimbing','medium','medium'), m('surfing','high','high'), m('skiing','medium','medium'),
+    m('snowboarding','medium','medium'), m('overlanding','medium','low'), m('kayaking','medium','low'),
+    m('fishinglife','medium','medium'), m('traillife','low','low'), m('wildcamping','low','low'),
+  ],
+
+  // ARCHITECTURE
+  architecture: [
+    m('architecture','high','high'), m('architecturephotography','high','high'), m('buildingdesign','medium','medium'),
+    m('modernarchitecture','medium','medium'), m('urbanarchitecture','medium','low'), m('architecturelovers','medium','medium'),
+    m('cityscape','medium','medium'), m('interiorarchitecture','low','low'), m('architecturaldesign','medium','medium'),
+    m('skyscraper','medium','medium'), m('historicbuildings','low','low'), m('minimalistarchitecture','low','low'),
+    m('architect','medium','medium'), m('structuraldesign','low','low'),
+  ],
+
+  // VINTAGE & THRIFT
+  vintage: [
+    m('vintage','high','high'), m('thrifted','high','high'), m('vintagestyle','high','high'),
+    m('secondhand','medium','medium'), m('thriftstore','medium','medium'), m('antique','medium','medium'),
+    m('retroaesthetic','medium','medium'), m('y2kaesthetic','medium','medium'), m('90sfashion','medium','medium'),
+    m('80sfashion','medium','medium'), m('fleamarket','medium','medium'), m('vintagefinds','medium','low'),
+    m('prelovedclothing','low','low'), m('vintageshop','medium','low'), m('retrovibe','low','low'),
+  ],
+
+  // FOOD CONTENT CREATOR
+  foodcontent: [
+    m('mukbang','high','high'), m('foodvideo','medium','medium'), m('recipevideo','medium','medium'),
+    m('foodchallenge','medium','medium'), m('streetfood','high','high'), m('foodtour','medium','medium'),
+    m('restaurantreview','medium','medium'), m('tastetesting','low','low'), m('asmrfood','medium','medium'),
+    m('cookingvideo','medium','medium'), m('foodreview','medium','medium'), m('foodcontentcreator','low','low'),
+    m('foodasmr','medium','low'),
+  ],
+
+  // RECOVERY & SOBRIETY
+  recovery: [
+    m('sobriety','medium','medium'), m('sobercurious','medium','low'), m('alcoholfree','medium','low'),
+    m('recoveryispossible','medium','low'), m('soberlife','medium','medium'), m('mentalwellness','medium','medium'),
+    m('healingcommunity','low','low'), m('recoveryjourney','medium','low'), m('sobrietyrocks','low','low'),
+    m('cleanandsober','low','low'), m('grief','medium','medium','adjacent'),
+  ],
+
+  // PRODUCTIVITY
+  productivity: [
+    m('productivity','high','high'), m('studywithme','medium','medium'), m('bulletjournal','high','high'),
+    m('bujo','medium','medium'), m('notionapp','medium','medium'), m('morningroutine','high','high'),
+    m('nightroutine','medium','medium'), m('desksetup','medium','medium'), m('workfromhome','high','high'),
+    m('timemanagement','medium','medium'), m('plannerlife','medium','medium'), m('deepwork','low','low'),
+    m('focusmode','low','low'), m('pomodorotechnique','low','low'),
+  ],
+
+  // SPORTS GENERAL
+  sports: [
+    m('athlete','high','high'), m('sportslife','medium','medium'), m('gameday','high','high'),
+    m('sportsphotography','medium','medium'), m('championship','medium','medium'), m('teamwork','medium','medium'),
+    m('youthsports','low','low'), m('sportscoach','low','low'), m('competitivesports','low','low'),
+    m('tourney','low','low'), m('varsitylife','low','low'), m('athletemindset','low','low'),
+    m('sportsmotivation','medium','medium'),
+  ],
+
+  // FOOTBALL / SOCCER
+  football: [
+    m('football','high','high'), m('nfl','high','high'), m('superbowl','high','high'),
+    m('collegefootball','high','high'), m('fantasyfootball','medium','medium'), m('tailgate','medium','medium'),
+    m('soccer','high','high'), m('premierleague','high','high'), m('fifa','high','high'),
+    m('mls','medium','medium'), m('footballlife','medium','medium'), m('soccerlife','medium','medium'),
+    m('goalkeeper','medium','medium'), m('footballtraining','low','low'),
+  ],
+
+  // DANCE
+  dance: [
+    m('dancer','high','high'), m('dance','high','high'), m('dancing','high','high'),
+    m('choreography','medium','medium'), m('ballet','high','high'), m('dancevideo','medium','medium'),
+    m('dancelife','medium','medium'), m('dancereels','medium','medium'), m('dancerlife','medium','medium'),
+    m('contemporarydance','medium','low'), m('dancestudio','medium','medium'), m('salsa','medium','medium'),
+    m('dancechallenge','high','high'), m('ballerina','medium','medium'),
+  ],
+
+  // PODCASTING & YOUTUBE
+  podcast: [
+    m('podcast','high','high'), m('podcasting','medium','medium'), m('youtuber','high','high'),
+    m('vlog','high','high'), m('podcastlife','medium','medium'), m('newpodcast','medium','medium'),
+    m('podcasthost','low','low'), m('vlogger','medium','medium'), m('youtubechannel','medium','medium'),
+    m('dailyvlog','medium','medium'), m('creatoreconomy','low','low'), m('videoessay','low','low'),
+    m('podcastrecommendations','low','low'),
+  ],
+
+  // SPECIFIC CUISINES
+  cuisines: [
+    m('sushi','high','high'), m('ramen','high','high'), m('tacos','high','high'),
+    m('pizza','high','high'), m('pasta','high','high'), m('curry','high','high'),
+    m('italianfood','high','high'), m('mexicanfood','high','high'), m('indianfood','high','high'),
+    m('japanesefood','high','high'), m('thaifood','medium','medium'), m('koreanfood','high','high'),
+    m('chinesefood','medium','medium'), m('mediterraneanfood','medium','low'), m('pho','medium','medium'),
+    m('dimsum','medium','medium'), m('africanfood','medium','low'),
+  ],
+
+  // SELF-CARE
+  selfcare: [
+    m('selfcare','high','high'), m('selflove','high','high'), m('journaling','high','high'),
+    m('gratitude','high','high'), m('affirmations','high','high'), m('selfcareroutine','medium','medium'),
+    m('mentalhealthday','medium','low'), m('boundaries','medium','medium'), m('burnoutrecovery','low','low'),
+    m('glowup','high','high'), m('selflovejourney','medium','low'), m('spa','medium','medium'),
+    m('restday','low','low'), m('mindfulness','high','high'), m('innerpeace','medium','medium'),
+    m('healingvibes','medium','low'),
+  ],
+
+  // TECH PRODUCTS / REVIEWS
+  techreviews: [
+    m('unboxing','high','high'), m('techreview','medium','medium'), m('gadgets','medium','medium'),
+    m('iphone','high','high'), m('apple','high','high'), m('samsung','high','high'),
+    m('laptopsetup','medium','medium'), m('airpods','high','high'), m('smartwatch','medium','medium'),
+    m('techaccessories','medium','low'), m('productreview','medium','medium'), m('techlife','medium','medium'),
+    m('setupinspo','medium','low'), m('techsetup','medium','low'),
+  ],
+
+  // ECOMMERCE
+  ecommerce: [
+    m('ecommerce','medium','medium'), m('dropshipping','medium','medium'), m('shopify','medium','medium'),
+    m('etsyseller','medium','medium'), m('sellingonline','medium','medium'), m('onlinestore','medium','medium'),
+    m('reselling','medium','medium'), m('printondemand','medium','low'), m('sneakerresell','medium','medium'),
+    m('amazonfba','medium','medium'), m('flippingproducts','low','low'), m('passiveincomeonline','low','low'),
+    m('digitalproducts','medium','medium'),
+  ],
+
+  // VOLUNTEERING / PHILANTHROPY
+  volunteering: [
+    m('volunteerwork','medium','low'), m('communityservice','medium','low'), m('givingback','medium','medium'),
+    m('volunteers','medium','low'), m('serviceproject','low','low'), m('foodbank','low','low'),
+    m('missiontrip','low','low'), m('humanitarianwork','low','low'), m('payitforward','medium','low'),
+    m('communityoutreach','low','low'), m('donationnow','low','low'), m('helpingothers','medium','medium','adjacent'),
+  ],
+
+  // GENERAL GROWTH — always blended in (2-3)
+  general: [
+    m('communitybuilding','medium','medium','general'),
+    m('organicgrowth','medium','medium','general'),
+    m('contentcreator','high','high','general'),
+  ],
+};
+
+// ---------- KEYWORD ROUTING ----------
+// Order matters slightly: more specific categories listed first so they get priority.
+const KEYWORDS = {
+  swimming: ['swim', 'pool', 'aquatic', 'stroke', 'freestyle', 'backstroke', 'breaststroke', 'butterfly', 'lap', 'triathlon', 'open water'],
+  basketball: ['basketball', 'hoops', 'court', 'ball', 'dunk', 'nba', 'shooting'],
+  running: ['run', 'marathon', 'jog', 'race', 'sprint', '5k', '10k', 'trail'],
+  yoga: ['yoga', 'meditation', 'mindful', 'breathwork', 'zen', 'pilates', 'stretch'],
+  fitness: ['gym', 'workout', 'fitness', 'training', 'exercise', 'weights', 'cardio', 'lift', 'muscle', 'bodybuilding', 'crossfit'],
+
+  baking: ['bak', 'pastry', 'cake', 'bread', 'dessert', 'sweet', 'cookie', 'pie', 'sourdough'],
+  coffee: ['coffee', 'espresso', 'latte', 'barista', 'brew', 'roast', 'cafe'],
+  restaurant: ['restaurant', 'cafe', 'diner', 'bistro', 'eatery', 'menu', 'dining'],
+  nutrition: ['nutrition', 'diet', 'healthy eating', 'macro', 'calorie', 'supplement', 'protein', 'vegan', 'plant based', 'plant-based'],
+  foodblog: ['food', 'foodie', 'recipe', 'cook', 'eat', 'meal', 'dish', 'cuisine', 'chef', 'kitchen', 'taste'],
+
+  mentalhealth: ['mental health', 'therapy', 'therapist', 'counseling', 'anxiety', 'depression', 'behavioral', 'psychology', 'healing'],
+  lifecoaching: ['coach', 'mindset', 'motivation', 'personal development', 'self improvement', 'success'],
+  skincare: ['skin', 'skincare', 'beauty', 'glow', 'serum', 'moisturizer', 'acne', 'derma'],
+  holistic: ['holistic', 'natural', 'herbal', 'alternative', 'integrative', 'naturopath', 'energy healing'],
+
+  tutoring: ['tutor', 'academic', 'study', 'school', 'education', 'learning', 'student', 'teacher', 'homework'],
+  youth: ['youth', 'teen', 'kid', 'child', 'young', 'after school', 'mentorship'],
+  edtech: ['course', 'online learning', 'elearning', 'edtech', 'digital education'],
+
+  cleanwater: ['water', 'clean water', 'environment', 'sustainability', 'climate', 'ecology', 'ecological', 'eco friendly', 'green'],
+  nonprofit: ['nonprofit', 'charity', 'volunteer', 'philanthropy', 'social impact', 'giveback', 'donate'],
+  community: ['community', 'local', 'neighborhood', 'grassroots', 'civic'],
+
+  startup: ['startup', 'founder', 'venture', 'pitch', 'mvp', 'launch'],
+  smallbusiness: ['small business', 'shop', 'local business', 'side hustle', 'entrepreneur'],
+  realestate: ['real estate', 'realtor', 'property', 'home', 'house', 'mortgage', 'listing'],
+  finance: ['finance', 'invest', 'stock', 'money', 'wealth', 'budget', 'trading', 'crypto'],
+
+  photography: ['photo', 'photograph', 'camera', 'shoot', 'portrait', 'landscape', 'lens'],
+  design: ['design', 'graphic', 'logo', 'brand', 'creative', 'visual', 'ui design', 'ux design'],
+  music: ['music', 'song', 'musician', 'recording', 'producer', 'rapper', 'singer', 'beat', 'record label', 'album', 'soundcloud'],
+  fashion: ['fashion', 'style', 'outfit', 'clothing', 'wear', 'ootd', 'apparel', 'streetwear'],
+
+  software: ['code', 'software', 'app', 'developer', 'programming', 'web dev', 'javascript', 'python'],
+  ai: ['ai', 'machine learning', 'artificial intelligence', 'data science', 'neural', 'chatgpt', 'llm'],
+  cybersecurity: ['cyber', 'security', 'hacking', 'infosec', 'network', 'penetration', 'malware'],
+
+  events: ['event', 'planner', 'party', 'corporate event', 'conference', 'gala'],
+  wedding: ['wedding', 'bride', 'groom', 'engagement', 'fiance', 'bridal', 'honeymoon', 'bachelorette'],
+  travel: ['travel', 'trip', 'vacation', 'destination', 'explore', 'wander', 'tourism'],
+
+  // FASHION SUB-NICHES
+  streetwear: ['streetwear', 'hypebeast', 'urban', 'street style', 'sneaker', 'kicks', 'hype', 'drip'],
+  luxuryfashion: ['luxury', 'high end', 'designer', 'couture', 'gucci', 'prada', 'louis vuitton', 'chanel', 'versace', 'high fashion'],
+  sustainablefashion: ['sustainable', 'ethical', 'slow fashion', 'thrift', 'secondhand', 'vintage clothing', 'upcycle'],
+  footwear: ['sandal', 'shoe', 'footwear', 'heels', 'boots', 'loafer', 'flip flop', 'mule', 'wedge', 'platform shoe'],
+
+  // TRAVEL SUB-NICHES
+  beach: ['beach', 'ocean', 'tropical', 'island', 'resort', 'coastal', 'surf', 'maldives', 'hawaii', 'bali', 'caribbean'],
+  luxurytravel: ['luxury travel', 'five star', '5 star', 'first class', 'private jet', 'yacht', 'suite', 'villa', 'luxury resort'],
+  digitalnomad: ['digital nomad', 'remote work', 'laptop lifestyle', 'nomad', 'work from anywhere', 'van life'],
+
+  // BEAUTY
+  beauty: ['makeup', 'cosmetic', 'lipstick', 'foundation', 'mascara', 'eyeshadow', 'blush', 'glam', 'mua', 'contour'],
+  hair: ['hair', 'hairstyle', 'haircolor', 'blonde', 'brunette', 'curls', 'natural hair', 'braids', 'haircut', 'salon', 'hairdresser', 'locs', 'afro'],
+
+  // ART & MARKETING
+  art: ['art', 'paint', 'draw', 'illustration', 'illustrator', 'artist', 'sketch', 'watercolor', 'acrylic', 'oil paint', 'sculpt', 'gallery', 'canvas'],
+  marketing: ['marketing', 'social media', 'brand ', 'influencer', 'seo', 'campaign', 'ads', 'tiktok marketing', 'instagram marketing'],
+
+  // EDUCATION — COLLEGE & SCHOOL
+  college: ['college', 'university', 'uni', 'campus', 'dorm', 'freshman', 'sophomore', 'junior', 'senior', 'grad school', 'major', 'degree', 'admissions', 'frat', 'sorority', 'greek life'],
+  highschool: ['high school', 'highschool', 'prom', 'homecoming', 'graduation', 'class of', 'valedictorian', 'gpa', 'ap class', 'ib diploma'],
+
+  // SPECIFIC UNIVERSITIES
+  universities: ['harvard', 'yale', 'princeton', 'stanford', 'mit', 'caltech', 'duke', 'vanderbilt', 'notre dame', 'georgetown', 'emory', 'columbia', 'cornell', 'dartmouth', 'upenn', 'penn ', 'brown university', 'tufts', 'northeastern', 'boston university', 'boston college', 'carnegie mellon', 'rice university', 'tulane', 'usc trojan', 'nyu', 'johns hopkins', 'northwestern', 'uchicago', 'chicago', 'pepperdine', 'baylor', 'smu', 'howard', 'spelman', 'morehouse', 'hbcu', 'umich', 'wolverines', 'go blue', 'ucla', 'ucb', 'berkeley', 'ucsd', 'ucsb', 'ucdavis', 'ucirvine', 'ohio state', 'buckeye', 'florida', 'gator', 'fsu', 'seminole', 'ucf', 'knight ', 'ut austin', 'longhorn', 'texas a&m', 'aggie', 'penn state', 'nittany', 'uva', 'cavalier', 'unc', 'tar heel', 'nc state', 'georgia tech', 'yellow jacket', 'uga', 'bulldog', 'washington husky', 'wisconsin', 'badger', 'illini', 'purdue', 'boilermaker', 'indiana university', 'hoosier', 'minnesota', 'gopher', 'iowa', 'hawkeye', 'michigan state', 'spartan', 'rutgers', 'maryland', 'terp', 'virginia tech', 'hokie', 'pitt', 'panther', 'uconn', 'colorado', 'arizona', 'sun devil', 'utah', 'byu', 'oregon', 'duck', 'beaver', 'south carolina', 'gamecock', 'clemson', 'lsu', 'tiger ', 'alabama', 'roll tide', 'auburn', 'razorback', 'tennessee', 'volunteer', 'kentucky wildcat', 'ole miss', 'oxford', 'cambridge', 'mba', 'law school', 'med school', 'business school', 'phd', 'pre med', 'pre law'],
+
+  // WALL ART & ROOMS
+  wallart: ['poster', 'wall art', 'print', 'gallery wall', 'canvas', 'art print', 'wall decor', 'tapestry', 'collage wall', 'framed art', 'aesthetic wall'],
+  aestheticrooms: ['aesthetic room', 'room aesthetic', 'dark academia', 'cottagecore', 'coquette', 'soft girl', 'pinterest room', 'boho room', 'minimalist room', 'kawaii', 'fairy lights', 'led lights', 'room inspo', 'bedroom inspo'],
+
+  // CARS / GAMING / ANIME / KPOP
+  cars: ['car ', 'auto', 'vehicle', 'truck', 'suv', 'sedan', 'coupe', 'supercar', 'sports car', 'jdm', 'bmw', 'mercedes', 'ferrari', 'lamborghini', 'porsche', 'mustang', 'tesla', 'electric vehicle', 'ev ', 'car meet', 'car show', 'detailing', 'drift', 'motorbike', 'motorcycle', 'harley', 'ducati'],
+  gaming: ['gaming', 'gamer', 'video game', 'playstation', 'xbox', 'nintendo', 'pc gaming', 'twitch', 'streamer', 'esports', 'fortnite', 'minecraft', 'roblox', 'call of duty', 'valorant', 'league of legends', 'console', 'rpg', 'fps', 'mmo'],
+  anime: ['anime', 'manga', 'cosplay', 'otaku', 'weeb', 'naruto', 'one piece', 'attack on titan', 'demon slayer', 'jujutsu kaisen', 'dragon ball', 'my hero academia', 'studio ghibli', 'vtuber'],
+  kpop: ['kpop', 'k-pop', 'bts', 'blackpink', 'stray kids', 'twice', 'nct', 'seventeen', 'aespa', 'newjeans', 'korean pop', 'kdrama', 'k-drama', 'idol'],
+  concerts: ['concert', 'festival', 'live music', 'music festival', 'tour', 'gig', 'coachella', 'lollapalooza', 'edm', 'rave', 'dj ', 'setlist', 'moshpit', 'backstage'],
+
+  // PREGNANCY / PARENTING
+  pregnancy: ['pregnant', 'pregnancy', 'baby bump', 'maternity', 'expecting', 'trimester', 'newborn', 'infant', 'baby shower', 'gender reveal'],
+  parenting: ['mom ', 'dad ', 'mother', 'father', 'momlife', 'dadlife', 'toddler', 'kids', 'children', 'family', 'parent', 'motherhood', 'fatherhood', 'gentle parenting'],
+
+  // LUXURY GOODS / PLANTS / BOOKS
+  luxurygoods: ['watch', 'rolex', 'omega', 'cartier', 'louis vuitton', 'birkin', 'jewelry', 'diamond', 'gold chain', 'flex'],
+  plants: ['plant', 'garden', 'houseplant', 'succulent', 'cactus', 'indoor plant', 'green thumb', 'botanical', 'flower', 'bloom', 'greenhouse', 'herb', 'monstera', 'pothos'],
+  books: ['book', 'reading', 'bookworm', 'booktok', 'bookstagram', 'novel', 'fiction', 'nonfiction', 'author', 'library', 'literature', 'kindle', 'audiobook'],
+
+  // ASTROLOGY / DIY / OUTDOOR
+  astrology: ['astrology', 'zodiac', 'horoscope', 'spiritual', 'manifest', 'crystal', 'tarot', 'witch', 'moon ', 'mercury retrograde', 'birth chart', 'chakra', 'angel number', 'oracle'],
+  diy: ['diy', 'craft', 'sewing', 'crochet', 'embroidery', 'macrame', 'resin', 'polymer clay', 'candle making', 'soap making', 'woodworking', 'maker'],
+  outdoor: ['hiking', 'camping', 'outdoor', 'mountain', 'trail', 'national park', 'backpacking', 'climbing', 'kayak', 'fishing', 'wilderness', 'overlanding', 'ski', 'snowboard'],
+
+  // ARCHITECTURE / VINTAGE
+  architecture: ['architecture', 'architect', 'building', 'cityscape', 'skyscraper', 'facade', 'historic building', 'modern architecture'],
+  vintage: ['vintage', 'antique', 'retro', '80s', '90s', 'y2k', 'preloved', 'consignment', 'vintage finds', 'vintage shop', 'flea market'],
+
+  // FOOD CONTENT / RECOVERY
+  foodcontent: ['mukbang', 'food video', 'recipe video', 'food challenge', 'asmr food', 'taste test', 'street food', 'food tour'],
+  recovery: ['sober', 'sobriety', 'recovery', 'addiction', 'alcohol free', 'drug free', '12 step', 'eating disorder', 'anorexia', 'bulimia'],
+
+  // PRODUCTIVITY / SPORTS / FOOTBALL
+  productivity: ['productivity', 'pomodoro', 'notion', 'bullet journal', 'bujo', 'planner', 'morning routine', 'night routine', 'desk setup', 'work from home', 'wfh', 'time management', 'focus', 'deep work'],
+  sports: ['sport', 'athlete', 'team', 'varsity', 'tournament', 'league', 'playoffs', 'sports training', 'competition'],
+  football: ['football', 'nfl', 'quarterback', 'touchdown', 'super bowl', 'fantasy football', 'tailgate', 'wide receiver', 'soccer', 'premier league', 'la liga', 'mls', 'fifa', 'striker', 'goalkeeper', 'futbol'],
+
+  // DANCE / PODCAST / CUISINES
+  dance: ['dance', 'dancer', 'choreography', 'ballet', 'hip hop dance', 'contemporary', 'ballroom', 'salsa', 'tango', 'tiktok dance', 'freestyle dance'],
+  podcast: ['podcast', 'youtube', 'youtuber', 'vlog', 'creator economy', 'subscriber', 'video essay'],
+  cuisines: ['italian food', 'mexican food', 'indian food', 'japanese food', 'thai food', 'chinese food', 'korean food', 'mediterranean', 'sushi', 'ramen', 'tacos', 'pizza', 'pasta', 'curry', 'dim sum', ' pho ', 'vietnamese', 'ethiopian', 'jamaican food', 'brazilian food', 'greek food'],
+
+  // SELF-CARE / TECH REVIEWS / ECOMMERCE / VOLUNTEERING
+  selfcare: ['self care', 'self love', 'selfcare', 'journal', 'gratitude', 'affirmation', 'burnout', 'glow up', 'mental health day'],
+  techreviews: ['tech review', 'unboxing', 'gadget', 'iphone', 'android', 'airpods', 'apple', 'samsung', 'google pixel', 'smartwatch', 'tablet', 'ipad', 'product review'],
+  ecommerce: ['ecommerce', 'dropshipping', 'shopify', 'amazon', 'selling online', 'online store', 'print on demand', 'etsy', 'resell', 'reselling', 'ebay', 'marketplace', 'product sourcing'],
+  volunteering: ['volunteer', 'community service', 'food bank', 'habitat for humanity', 'red cross', 'donation drive', 'humanitarian', 'mission trip', 'pay it forward'],
+};
+
+function pickCategories(niche) {
+  // Pad with spaces and normalize hyphens/underscores → spaces so keywords
+  // only match at word starts. This prevents substring false positives like
+  // 'art' matching "startup", 'pho' matching "photographer", 'app' matching
+  // "happen", 'home' matching "phomenon", 'eat' matching "creator", etc.
+  const n = ' ' + niche.toLowerCase().replace(/[-_/.,!?]/g, ' ').replace(/\s+/g, ' ').trim() + ' ';
+  const matched = [];
+  for (const [cat, words] of Object.entries(KEYWORDS)) {
+    if (words.some(w => {
+      const kw = (w.startsWith(' ') ? w : ' ' + w).replace(/[-_]/g, ' ');
+      return n.includes(kw);
+    })) matched.push(cat);
+  }
+  return matched; // may be empty — caller handles no-match case
+}
+
+// ---------- SCORING ----------
+function scoreHashtag(tag, accountSize, goal) {
+  // Volume score — low volume = easiest to rank in
+  let volumeScore;
+  if (tag.volume === 'high') volumeScore = 40;
+  else if (tag.volume === 'medium') volumeScore = 70;
+  else volumeScore = 90;
+
+  // Competition score — inverse (lower competition = higher score)
+  let competitionScore;
+  if (tag.competition === 'high') competitionScore = 20;
+  else if (tag.competition === 'medium') competitionScore = 60;
+  else competitionScore = 90;
+
+  // Relevance score
+  let relevanceScore;
+  if (tag.relevance === 'exact') relevanceScore = 100;
+  else if (tag.relevance === 'adjacent') relevanceScore = 65;
+  else relevanceScore = 35;
+
+  // Goal-based weights
+  let volumeWeight, competitionWeight, relevanceWeight;
+  if (goal === 'reach') {
+    volumeWeight = 0.45; competitionWeight = 0.25; relevanceWeight = 0.30;
+  } else if (goal === 'engagement') {
+    volumeWeight = 0.20; competitionWeight = 0.30; relevanceWeight = 0.50;
+  } else { // followers
+    volumeWeight = 0.25; competitionWeight = 0.40; relevanceWeight = 0.35;
+  }
+
+  // Account size modifier
+  let sizeModifier = 0;
+  if (accountSize === 'small') {
+    if (tag.volume === 'low') sizeModifier += 8;
+    if (tag.volume === 'high') sizeModifier -= 10;
+    if (tag.competition === 'low') sizeModifier += 8;
+    if (tag.competition === 'high') sizeModifier -= 10;
+  } else if (accountSize === 'growing') {
+    if (tag.volume === 'high') sizeModifier += 7;
+    if (tag.volume === 'low') sizeModifier -= 5;
+  }
+
+  // Compute the base score WITHOUT the micro tie-breaker, then soft-cap it
+  // before adding micro. This preserves micro variation at the top of the
+  // range so a pile of low/low/exact tags doesn't all flatten to 100.
+  const base = (volumeScore * volumeWeight) +
+               (competitionScore * competitionWeight) +
+               (relevanceScore * relevanceWeight) +
+               sizeModifier;
+  const capped = Math.min(88, base);
+  const raw = capped + (tag.micro || 0);
+
+  return Math.min(100, Math.max(0, Math.round(raw)));
+}
+
+function getReasonText(tag, accountSize, score) {
+  if (tag.competition === 'low' && tag.volume === 'low') {
+    return 'Low competition, small audience — easy to dominate and own this tag.';
+  } else if (tag.competition === 'low' && tag.volume === 'medium') {
+    return 'Low competition with healthy traffic — strong chance of hitting top posts.';
+  } else if (tag.competition === 'high' && tag.volume === 'high') {
+    return 'Massive reach but very competitive — use sparingly alongside niche tags.';
+  } else if (tag.volume === 'medium' && tag.competition === 'medium') {
+    return 'Balanced tag — good visibility without being buried by competition.';
+  } else if (tag.relevance === 'adjacent') {
+    return 'Adjacent to your niche — helps reach nearby audiences and expand your reach.';
+  } else if (tag.competition === 'high' && accountSize === 'small') {
+    return 'High competition — tough for a smaller account but good for broad exposure.';
+  } else if (tag.volume === 'low' && accountSize === 'growing') {
+    return 'Lower volume than ideal for a growing account — but helps own a niche corner.';
+  } else {
+    return 'Directly matches your niche with solid traffic potential.';
+  }
+}
+
+// ---------- BUILD RESULTS ----------
+function generate(niche, size, goal) {
+  const cats = pickCategories(niche);
+  const noMatch = cats.length === 0;
+
+  const pool = [];
+  cats.forEach(c => pool.push(...DB[c]));
+  // always blend in 2-3 general growth tags
+  pool.push(...DB.general);
+
+  // dedupe
+  const seen = new Set();
+  const unique = pool.filter(h => {
+    if (seen.has(h.tag)) return false;
+    seen.add(h.tag);
+    return true;
+  });
+
+  const scored = unique.map(h => {
+    const score = scoreHashtag(h, size, goal);
+    return { ...h, score, why: getReasonText(h, size, score) };
+  }).sort((a, b) => b.score - a.score);
+
+  // No-match path: only show the general growth tags as a single tier
+  if (noMatch) {
+    return {
+      noMatch: true,
+      high: scored,
+      broad: [],
+      niche_anchors: [],
+    };
+  }
+
+  let high = scored.filter(h => h.score >= 75).slice(0, 7);
+  let broad = scored.filter(h => h.score >= 50 && h.score < 75).slice(0, 6);
+  let niche_anchors = scored.filter(h => h.score >= 25 && h.score < 50).slice(0, 6);
+
+  // ensure tier 1 has at least 5 items — fallback fill from broad/niche_anchors,
+  // and remove the promoted items from their original tier so nothing renders twice.
+  if (high.length < 5) {
+    const need = 5 - high.length;
+    const promoted = [...broad, ...niche_anchors].slice(0, need);
+    high.push(...promoted);
+    const promotedSet = new Set(promoted);
+    broad = broad.filter(h => !promotedSet.has(h));
+    niche_anchors = niche_anchors.filter(h => !promotedSet.has(h));
+  }
+
+  return { noMatch: false, high, broad, niche_anchors };
+}
+
+// ---------- RENDER ----------
+function tierHTML(title, subtitle, badgeClass, items, tierLabel) {
+  if (!items.length) return '';
+  const rows = items.map(h => `
+    <div class="hashtag-item">
+      <div class="hashtag-row">
+        <span class="hashtag-name">#${h.tag}</span>
+        <span class="hashtag-score">${h.score}/100</span>
+      </div>
+      <div class="progress-track">
+        <div class="progress-fill ${badgeClass}" data-target="${h.score}"></div>
+      </div>
+      <div class="hashtag-explain">${h.why}</div>
+    </div>
+  `).join('');
+  return `
+    <div class="tier">
+      <div class="tier-header">
+        <span class="tier-badge ${badgeClass}">${tierLabel}</span>
+        <span class="tier-title">${title}</span>
+      </div>
+      <div class="tier-subtitle">${subtitle}</div>
+      <div class="hashtag-list">${rows}</div>
+    </div>
+  `;
+}
+
+function render(results) {
+  const { high, broad, niche_anchors, noMatch } = results;
+  const all = [...high, ...broad, ...niche_anchors];
+  const copyText = all.map(h => '#' + h.tag).join(' ');
+
+  const noMatchHTML = noMatch ? `
+    <div class="no-match-note">
+      We couldn't find an exact match for your niche. Here are general growth hashtags — try being more specific (e.g. 'yoga studio', 'food blogger', 'real estate agent').
+    </div>
+  ` : '';
+
+  const html = `
+    ${noMatchHTML}
+    ${tierHTML('High Leverage', 'Your best chance at appearing in top posts', 'green', high, 'Tier 1')}
+    ${tierHTML('Broad Reach', 'High exposure, harder to stand out', 'yellow', broad, 'Tier 2')}
+    ${tierHTML('Niche Anchors', 'Own your corner — small but loyal audience', 'blue', niche_anchors, 'Tier 3')}
+    <div class="copy-section">
+      <h3>Copy all recommended hashtags</h3>
+      <p>${all.length} hashtags ready to paste into your next post or first comment.</p>
+      <div class="copy-block" id="copyBlock">${copyText}</div>
+      <button type="button" class="copy-btn" id="copyBtn">Copy All Hashtags</button>
+    </div>
+  `;
+
+  const container = document.getElementById('results');
+  container.innerHTML = html;
+  container.classList.add('visible');
+
+  // animate progress bars
+  requestAnimationFrame(() => {
+    document.querySelectorAll('.progress-fill').forEach(el => {
+      el.style.width = el.dataset.target + '%';
+    });
+  });
+
+  // copy
+  document.getElementById('copyBtn').addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText(copyText);
+    } catch (e) {
+      const ta = document.createElement('textarea');
+      ta.value = copyText;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+    }
+    const btn = document.getElementById('copyBtn');
+    const original = btn.textContent;
+    btn.textContent = 'Copied!';
+    btn.classList.add('copied');
+    setTimeout(() => {
+      btn.textContent = original;
+      btn.classList.remove('copied');
+    }, 2000);
+  });
+
+  container.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// ---------- INIT ----------
+document.getElementById('scoreForm').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const niche = document.getElementById('niche').value.trim();
+  const size = document.getElementById('size').value;
+  const goal = document.getElementById('goal').value;
+  if (!niche) return;
+  const results = generate(niche, size, goal);
+  render(results);
+});
+</script>
+</body>
+</html>
